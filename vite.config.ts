@@ -13,8 +13,9 @@ export default defineConfig({
   assetsInclude: ["**/*.svg", "**/*.csv"],
   server: {
     port: 5173,
-    // Proxy API calls to backend during development so you don't
-    // need to touch CORS or set VITE_API_URL locally
+    hmr: {
+      clientPort: 443,
+    },
     proxy: {
       "/auth": "http://localhost:3000",
       "/users": "http://localhost:3000",
@@ -29,6 +30,7 @@ export default defineConfig({
       },
     },
   },
+  
   build: {
     outDir: "dist",
     sourcemap: false,

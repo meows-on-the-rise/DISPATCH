@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import { authApi } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
 import { useToast } from "../../lib/toast";
+import { Icons } from "../../components/shared";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -10,7 +11,6 @@ export default function RegisterPage() {
   const role = (params.get("role") ?? "PASSENGER") as "PASSENGER" | "DRIVER";
   const { setAuth } = useAuthStore();
   const toast = useToast();
-
   const [form, setForm] = useState({
     fullName: "", username: "", email: "", phone: "",
     password: "", confirmPassword: "", dob: "", idNumber: "",
@@ -18,98 +18,82 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+    setForm(f => ({ ...f, [k]: e.target.value }));
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    if (form.password !== form.confirmPassword) {
-      toast("Passwords don't match", "error");
-      return;
-    }
+    if (form.password !== form.confirmPassword) { toast("Passwords don't match", "error"); return; }
     setLoading(true);
     try {
-      const { data } = await authApi.register({
-        fullName: form.fullName, username: form.username,
-        email: form.email, phone: form.phone,
-        password: form.password, dob: form.dob,
-        idNumber: form.idNumber, role,
-      });
+      const { data } = await authApi.register({ ...form, role });
       setAuth(data.user, data.accessToken, data.refreshToken);
-      toast(`Welcome, ${data.user.fullName}! Your ID: ${data.user.userId}`, "success");
+      toast(`Welcome, ${data.user.fullName}!`, "success");
       navigate(role === "DRIVER" ? "/driver" : "/passenger");
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Registration failed";
       toast(msg, "error");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
-  const fields: Array<{ key: keyof typeof form; label: string; type?: string; placeholder: string }> = [
-    { key: "fullName",        label: "Full Name",       placeholder: "Thabo Mokoena" },
-    { key: "username",        label: "Username",        placeholder: "thabo_m" },
-    { key: "email",           label: "Email",           type: "email", placeholder: "thabo@example.com" },
-    { key: "phone",           label: "Phone Number",    type: "tel", placeholder: "+266 57 123 456" },
-    { key: "dob",             label: "Date of Birth",   type: "date", placeholder: "" },
-    { key: "idNumber",        label: "ID Number",       placeholder: "National ID or Passport" },
-    { key: "password",        label: "Password",        type: "password", placeholder: "Min. 8 characters" },
-    { key: "confirmPassword", label: "Confirm Password",type: "password", placeholder: "Repeat password" },
+  const fields: Array<{ key: keyof typeof form; label: string; type?: string; placeholder: string; icon: React.ReactNode }> = [
+    { key: "fullName",        label: "Full Name",        placeholder: "Thabo Mokoena",     icon: Icons.user },
+    { key: "username",        label: "Username",         placeholder: "thabo_m",           icon: Icons.user },
+    { key: "email",           label: "Email",            type: "email", placeholder: "thabo@example.com", icon: Icons.mail },
+    { key: "phone",           label: "Phone Number",     type: "tel",   placeholder: "+266 57 123 456",   icon: Icons.phone },
+    { key: "dob",             label: "Date of Birth",    type: "date",  placeholder: "",                  icon: Icons.clock },
+    { key: "idNumber",        label: "National ID",      placeholder: "National ID / Passport",           icon: Icons.document },
+    { key: "password",        label: "Password",         type: "password", placeholder: "Min. 8 characters", icon: Icons.lock },
+    { key: "confirmPassword", label: "Confirm Password", type: "password", placeholder: "Repeat password",   icon: Icons.lock },
   ];
 
   return (
     <div className="app-shell">
-      {/* Header */}
-      <div className="nav-header">
-        <button className="map-btn" onClick={() => navigate("/")}>
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
+      <div className="header-dark" style={{ paddingTop: 48 }}>
+        <button className="btn-icon-dark" onClick={() => navigate("/")} style={{ marginBottom: 20 }}>
+          {Icons.back}
         </button>
-        <h3 style={{ fontFamily: "var(--font-display)" }}>
-          {role === "DRIVER" ? "🚗 Driver" : "🧍 Passenger"} Registration
-        </h3>
-        <div style={{ width: 44 }} />
+        <div className="flex items-center gap-3">
+          <div style={{
+            width: 36, height: 36, borderRadius: "var(--r-md)",
+            background: "rgba(249,115,22,0.2)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "var(--orange)",
+          }}>
+            {role === "DRIVER" ? Icons.car : Icons.user}
+          </div>
+          <div>
+            <h3 style={{ color: "#fff" }}>{role === "DRIVER" ? "Driver" : "Passenger"} Registration</h3>
+            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Create your Dispatch account</p>
+          </div>
+        </div>
       </div>
 
-      <div className="scroll-area flex-1 p-4">
-        <div className="page-enter flex-col gap-4" style={{ paddingBottom: 32 }}>
-          {/* Role badge */}
-          <div className={`badge ${role === "DRIVER" ? "badge-teal" : "badge-purple"}`} style={{ alignSelf: "flex-start" }}>
-            {role === "DRIVER" ? "Driver Account" : "Passenger Account"}
-          </div>
-
-          <form onSubmit={handleRegister} className="flex-col gap-3">
-            {fields.map(({ key, label, type = "text", placeholder }) => (
-              <div className="input-wrap" key={key}>
-                <label className="input-label">{label}</label>
-                <input
-                  className="input"
-                  type={type}
-                  placeholder={placeholder}
-                  value={form[key]}
-                  onChange={set(key)}
-                  required
-                />
+      <div className="scroll-area flex-1 px-5" style={{ paddingTop: 24 }}>
+        <form onSubmit={handleRegister} className="flex-col gap-3 page-enter" style={{ paddingBottom: 40 }}>
+          {fields.map(({ key, label, type = "text", placeholder, icon }) => (
+            <div className="input-wrap" key={key}>
+              <label className="input-label">{label}</label>
+              <div className="relative">
+                <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }}>
+                  {icon}
+                </span>
+                <input className="input" style={{ paddingLeft: 44 }}
+                  type={type} placeholder={placeholder}
+                  value={form[key]} onChange={set(key)} required />
               </div>
-            ))}
+            </div>
+          ))}
 
-            <button className="btn btn-primary" type="submit" disabled={loading} style={{ marginTop: 8 }}>
-              {loading
-                ? <span className="spinner" style={{ width: 20, height: 20 }} />
-                : "Create Account"}
-            </button>
-          </form>
+          <button className="btn btn-primary" type="submit" disabled={loading} style={{ marginTop: 8 }}>
+            {loading ? <span className="spinner spinner-dark" style={{ width: 20, height: 20 }} /> : "Create Account"}
+          </button>
 
-          <p className="text-center" style={{ color: "var(--text-secondary)", fontSize: 14 }}>
+          <p style={{ textAlign: "center", fontSize: 13, color: "var(--text-muted)" }}>
             Already have an account?{" "}
-            <span
-              style={{ color: "var(--purple-light)", cursor: "pointer", fontWeight: 600 }}
-              onClick={() => navigate("/login")}
-            >
-              Sign in
-            </span>
+            <span style={{ color: "var(--orange)", fontWeight: 600, cursor: "pointer" }}
+              onClick={() => navigate("/login")}>Sign in</span>
           </p>
-        </div>
+        </form>
       </div>
     </div>
   );
