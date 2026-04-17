@@ -1,6 +1,9 @@
-import { v2 as cloudinary } from "cloudinary";
+import cloudinaryV1 from "cloudinary";
 import multer from "multer";
+import { Request } from "express";
 import { Readable } from "stream";
+
+const cloudinary = cloudinaryV1.v2;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
@@ -8,62 +11,55 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET!,
 });
 
-// ─── helpers ───────────────────────────────────────────────────────────────
-
-type UploadOptions = {
-  folder: string;
-  allowed_formats: string[];
-  resource_type?: "auto" | "image" | "video" | "raw";
-  transformation?: object[];
-};
-
-const streamUpload = (
-  buffer: Buffer,
-  options: UploadOptions
-): Promise<{ secure_url: string; public_id: string }> => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: options.folder,
-        allowed_formats: options.allowed_formats,
-        resource_type: options.resource_type ?? "image",
-        transformation: options.transformation,
-      },
-      (error, result) => {
-        if (error || !result) return reject(error ?? new Error("Upload failed"));
-        resolve({ secure_url: result.secure_url, public_id: result.public_id });
-      }
-    );
-    Readable.from(buffer).pipe(stream);
-  });
-};
-
-// ─── multer instances (memory storage — no third-party adapter needed) ─────
+// Use memory storage — files land in req.file.buffer
+// then we stream them to Cloudinary manually
+const storage = multer.memoryStorage();
 
 export const uploadAvatar = multer({
-  storage: multer.memoryStorage(),
+  storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter(_req: Request, file, cb) {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed for avatars"));
+  },
 });
 
 export const uploadDocument = multer({
-  storage: multer.memoryStorage(),
+  storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter(_req: Request, file, cb) {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Only images and PDFs are allowed for documents"));
+  },
 });
 
-// ─── route helpers ─────────────────────────────────────────────────────────
+// ── Upload helper — streams a buffer to Cloudinary ────────────────────────────
 
-export const handleAvatarUpload = (buffer: Buffer) =>
-  streamUpload(buffer, {
-    folder: "dispatch/avatars",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
-    transformation: [{ width: 400, height: 400, crop: "fill", gravity: "face" }],
-  });
+export async function uploadBufferToCloudinary(
+  buffer: Buffer,
+  folder: string,
+  resourceType: "image" | "raw" | "auto" = "auto",
+  transformation?: object
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: resourceType,
+        ...(transformation ? { transformation } : {}),
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result!.secure_url);
+      }
+    );
 
-export const handleDocumentUpload = (buffer: Buffer) =>
-  streamUpload(buffer, {
-    folder: "dispatch/documents",
-    allowed_formats: ["jpg", "jpeg", "png", "pdf"],
-    resource_type: "auto",
+    const readable = new Readable();
+    readable.push(buffer);
+    readable.push(null);
+    readable.pipe(uploadStream);
   });
+}
 
 export { cloudinary };

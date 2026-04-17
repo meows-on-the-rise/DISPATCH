@@ -32,7 +32,7 @@ router.patch("/documents/:id", async (req: AuthRequest, res: Response) => {
   }
 
   const doc = await prisma.driverDocument.update({
-    where: { id: req.params.id as string },
+    where: { id: req.params.id },
     data: { status, reviewNote, reviewedAt: new Date() },
   });
 

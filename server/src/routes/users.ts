@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, AuthRequest } from "../middleware/auth.js";
-import { uploadAvatar, handleAvatarUpload } from "../lib/cloudinary.js";
+import { uploadAvatar, uploadBufferToCloudinary } from "../lib/cloudinary.js";
 
 const router = Router();
 
@@ -12,11 +12,17 @@ router.patch("/profile", authenticate, async (req: AuthRequest, res: Response) =
 
   const user = await prisma.user.update({
     where: { id: req.user!.id },
-    data: { ...(fullName && { fullName }), ...(phone && { phone }) },
+    data: {
+      ...(fullName && { fullName }),
+      ...(phone && { phone }),
+    },
     select: { id: true, fullName: true, phone: true, avatarUrl: true, role: true },
   });
 
-  if (req.user!.role === "DRIVER" && (vehicleMake || vehicleModel || vehiclePlate || vehicleColor)) {
+  if (
+    req.user!.role === "DRIVER" &&
+    (vehicleMake || vehicleModel || vehiclePlate || vehicleColor)
+  ) {
     await prisma.driverProfile.update({
       where: { userId: req.user!.id },
       data: {
@@ -42,12 +48,20 @@ router.post(
       res.status(400).json({ error: "No file uploaded" });
       return;
     }
-    const { secure_url } = await handleAvatarUpload(req.file.buffer);
+
+    const avatarUrl = await uploadBufferToCloudinary(
+      req.file.buffer,
+      "dispatch/avatars",
+      "image",
+      [{ width: 400, height: 400, crop: "fill", gravity: "face" }]
+    );
+
     await prisma.user.update({
       where: { id: req.user!.id },
-      data: { avatarUrl: secure_url },
+      data: { avatarUrl },
     });
-    res.json({ avatarUrl: secure_url });
+
+    res.json({ avatarUrl });
   }
 );
 
@@ -55,15 +69,17 @@ router.post(
 
 router.get("/:id/reviews", authenticate, async (req: AuthRequest, res: Response) => {
   const ratings = await prisma.rating.findMany({
-    where: { receiverId: req.params.id as string },
-    include: { giver: { select: { fullName: true, avatarUrl: true } } },
+    where: { receiverId: req.params.id },
+    include: {
+      giver: { select: { fullName: true, avatarUrl: true } },
+    },
     orderBy: { createdAt: "desc" },
     take: 20,
   });
   res.json(ratings);
 });
 
-// ── GET /users/:id/stats ──────────────────────────────────────────────────────
+// ── GET /users/stats ──────────────────────────────────────────────────────────
 
 router.get("/stats", authenticate, async (req: AuthRequest, res: Response) => {
   const uid = req.user!.id;
@@ -100,9 +116,15 @@ router.get("/stats", authenticate, async (req: AuthRequest, res: Response) => {
         _sum: { distanceKm: true },
       }),
     ]);
+
     const reviews = await prisma.rating.findMany({
       where: { receiverId: uid },
-      select: { score: true, review: true, giver: { select: { fullName: true } }, createdAt: true },
+      select: {
+        score: true,
+        review: true,
+        giver: { select: { fullName: true } },
+        createdAt: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 10,
     });

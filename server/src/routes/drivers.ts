@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, AuthRequest } from "../middleware/auth.js";
-import { uploadDocument, handleDocumentUpload } from "../lib/cloudinary.js";
+import { uploadDocument, uploadBufferToCloudinary } from "../lib/cloudinary.js";
 import { getIO } from "../socket/io.js";
 
 const router = Router();
@@ -16,7 +16,9 @@ router.post("/clock", authenticate, async (req: AuthRequest, res: Response) => {
     return;
   }
 
-  const profile = await prisma.driverProfile.findUnique({ where: { userId: req.user!.id } });
+  const profile = await prisma.driverProfile.findUnique({
+    where: { userId: req.user!.id },
+  });
   if (!profile) {
     res.status(404).json({ error: "Driver profile not found" });
     return;
@@ -29,7 +31,8 @@ router.post("/clock", authenticate, async (req: AuthRequest, res: Response) => {
     });
     if (verifiedDocs < 3) {
       res.status(403).json({
-        error: "All 3 documents (license, permit, registration) must be verified before clocking in",
+        error:
+          "All 3 documents (license, permit, registration) must be verified before clocking in",
         verifiedCount: verifiedDocs,
       });
       return;
@@ -45,7 +48,6 @@ router.post("/clock", authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // ── PUT /drivers/location ─────────────────────────────────────────────────────
-// Driver pushes their GPS position (called every few seconds from the app)
 
 router.put("/location", authenticate, async (req: AuthRequest, res: Response) => {
   if (req.user!.role !== "DRIVER") {
@@ -64,14 +66,16 @@ router.put("/location", authenticate, async (req: AuthRequest, res: Response) =>
     data: { currentLat: lat, currentLng: lng },
   });
 
-  // If in an active trip, record location snapshot and broadcast to passenger
   if (tripId) {
     const trip = await prisma.trip.findUnique({ where: { id: tripId } });
-    if (trip && trip.driverId === req.user!.id && trip.status === "IN_PROGRESS") {
-      await prisma.tripLocation.create({ data: { tripId, lat, lng } });
-      getIO().to(`trip:${tripId}`).emit("driver:location", { lat, lng });
-    } else if (trip && trip.driverId === req.user!.id && trip.status === "DRIVER_ASSIGNED") {
-      // Driver en route to pickup — push to passenger too
+    if (
+      trip &&
+      trip.driverId === req.user!.id &&
+      ["IN_PROGRESS", "DRIVER_ASSIGNED", "DRIVER_ARRIVED"].includes(trip.status)
+    ) {
+      if (trip.status === "IN_PROGRESS") {
+        await prisma.tripLocation.create({ data: { tripId, lat, lng } });
+      }
       getIO().to(`trip:${tripId}`).emit("driver:location", { lat, lng });
     }
   }
@@ -91,9 +95,11 @@ router.post(
       return;
     }
 
-    const docType = (req.params.docType as string).toUpperCase();
+    const docType = req.params.docType.toUpperCase();
     if (!DOC_TYPES.includes(docType as (typeof DOC_TYPES)[number])) {
-      res.status(400).json({ error: `docType must be one of ${DOC_TYPES.join(", ")}` });
+      res.status(400).json({
+        error: `docType must be one of ${DOC_TYPES.join(", ")}`,
+      });
       return;
     }
 
@@ -102,17 +108,40 @@ router.post(
       return;
     }
 
-    const { secure_url: fileUrl } = await handleDocumentUpload(req.file.buffer);
-    const profile = await prisma.driverProfile.findUnique({ where: { userId: req.user!.id } });
+    const profile = await prisma.driverProfile.findUnique({
+      where: { userId: req.user!.id },
+    });
     if (!profile) {
       res.status(404).json({ error: "Driver profile not found" });
       return;
     }
 
+    // Upload buffer to Cloudinary
+    const fileUrl = await uploadBufferToCloudinary(
+      req.file.buffer,
+      "dispatch/documents",
+      "auto"
+    );
+
     const doc = await prisma.driverDocument.upsert({
-      where: { driverProfileId_docType: { driverProfileId: profile.id, docType } },
-      update: { fileUrl, status: "PENDING", reviewedAt: null, reviewNote: null },
-      create: { driverProfileId: profile.id, docType, fileUrl, status: "PENDING" },
+      where: {
+        driverProfileId_docType: {
+          driverProfileId: profile.id,
+          docType,
+        },
+      },
+      update: {
+        fileUrl,
+        status: "PENDING",
+        reviewedAt: null,
+        reviewNote: null,
+      },
+      create: {
+        driverProfileId: profile.id,
+        docType,
+        fileUrl,
+        status: "PENDING",
+      },
     });
 
     res.json(doc);
@@ -127,13 +156,17 @@ router.get("/documents", authenticate, async (req: AuthRequest, res: Response) =
     return;
   }
 
-  const profile = await prisma.driverProfile.findUnique({ where: { userId: req.user!.id } });
+  const profile = await prisma.driverProfile.findUnique({
+    where: { userId: req.user!.id },
+  });
   if (!profile) {
     res.json([]);
     return;
   }
 
-  const docs = await prisma.driverDocument.findMany({ where: { driverProfileId: profile.id } });
+  const docs = await prisma.driverDocument.findMany({
+    where: { driverProfileId: profile.id },
+  });
   res.json(docs);
 });
 

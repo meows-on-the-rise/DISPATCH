@@ -1,0 +1,545 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+/* ── Design tokens ────────────────────────────────────────────────────────── */
+:root {
+  /* Background layers — dark indigo from the reference */
+  --bg-base:        #0d1b3e;   /* deepest layer — page bg */
+  --bg-surface:     #111f4d;   /* cards, panels */
+  --bg-elevated:    #162258;   /* modals, sheets */
+  --bg-overlay:     rgba(13, 27, 62, 0.85); /* map overlays */
+
+  /* Brand */
+  --purple:         #7c4fe0;   /* primary CTA, route dot */
+  --purple-light:   #9b6ff5;
+  --purple-dim:     rgba(124, 79, 224, 0.18);
+  --purple-btn:     linear-gradient(135deg, #7c4fe0 0%, #9d6af7 100%);
+
+  /* Teal — route lines, pickup marker */
+  --teal:           #2edbb0;
+  --teal-dim:       rgba(46, 219, 176, 0.15);
+
+  /* Text */
+  --text-primary:   #f0eeff;
+  --text-secondary: #9b97c4;
+  --text-muted:     #5a567e;
+
+  /* Borders */
+  --border:         rgba(124, 79, 224, 0.18);
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+
+  /* Status */
+  --success:        #2edbb0;
+  --warning:        #f5a623;
+  --danger:         #f04f5a;
+
+  /* Map info card — the purple box from right screen */
+  --info-card-bg:   #7c4fe0;
+
+  /* Radius */
+  --r-sm:  8px;
+  --r-md:  14px;
+  --r-lg:  20px;
+  --r-xl:  28px;
+  --r-pill: 999px;
+
+  /* Shadows */
+  --shadow-card:  0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow-btn:   0 4px 24px rgba(124, 79, 224, 0.45);
+  --shadow-glow:  0 0 32px rgba(124, 79, 224, 0.25);
+
+  /* Fonts */
+  --font-display: 'Syne', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+
+  /* Transitions */
+  --transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* mobile app feel */
+}
+
+/* ── Mobile shell — simulates phone viewport ─────────────────────────────── */
+#root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-shell {
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  max-height: 932px;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Leaflet map override — dark tinted ──────────────────────────────────── */
+.leaflet-container {
+  background: var(--bg-base) !important;
+  filter: hue-rotate(200deg) saturate(0.4) brightness(0.55);
+}
+.leaflet-tile { filter: none; }
+.leaflet-control-zoom,
+.leaflet-control-attribution { display: none !important; }
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+h1, h2, h3, .display { font-family: var(--font-display); }
+h1 { font-size: 28px; font-weight: 800; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 17px; font-weight: 600; }
+
+/* ── Scrollable inner areas ──────────────────────────────────────────────── */
+.scroll-area {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-area::-webkit-scrollbar { display: none; }
+
+/* ── Glass card (the bottom sheet / location card in reference) ──────────── */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-xl);
+  padding: 20px;
+}
+.card-elevated {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  border-radius: var(--r-pill);
+  transition: var(--transition);
+  white-space: nowrap;
+  user-select: none;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--purple-btn);
+  color: #fff;
+  box-shadow: var(--shadow-btn);
+  padding: 16px 32px;
+  width: 100%;
+}
+.btn-primary:hover { box-shadow: 0 6px 32px rgba(124, 79, 224, 0.65); }
+
+.btn-ghost {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 14px 24px;
+  width: 100%;
+}
+
+.btn-icon {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-md);
+  padding: 0;
+  flex-shrink: 0;
+}
+.btn-icon:hover { border-color: var(--purple); }
+
+.btn-teal {
+  background: var(--teal);
+  color: #0d1b3e;
+  padding: 16px 32px;
+  width: 100%;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+/* ── Input fields ────────────────────────────────────────────────────────── */
+.input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.input-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color var(--transition);
+  width: 100%;
+}
+.input::placeholder { color: var(--text-muted); }
+.input:focus { border-color: var(--purple-light); }
+.input-icon {
+  position: relative;
+}
+.input-icon .input { padding-left: 44px; }
+.input-icon .icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* ── Nav header ──────────────────────────────────────────────────────────── */
+.nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  flex-shrink: 0;
+}
+
+/* ── Bottom tab bar ──────────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-subtle);
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
+  flex-shrink: 0;
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition);
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+}
+.tab-item.active { color: var(--purple-light); }
+.tab-item svg { width: 22px; height: 22px; }
+
+/* ── Rounded rect icon containers (dashboard icons from spec) ────────────── */
+.icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.icon-btn-box {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--r-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  color: var(--purple-light);
+}
+.icon-btn-box:hover { border-color: var(--purple); background: var(--purple-dim); }
+.icon-btn-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* ── Avatar circle ──────────────────────────────────────────────────────── */
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--purple);
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ── Star rating ─────────────────────────────────────────────────────────── */
+.stars { color: #f5a623; font-size: 13px; }
+
+/* ── Trip route connector (dashed line between pickup/dropoff) ───────────── */
+.route-line {
+  width: 1px;
+  flex: 1;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--text-muted) 0px,
+    var(--text-muted) 4px,
+    transparent 4px,
+    transparent 9px
+  );
+  margin: 2px auto;
+}
+
+/* ── Status badge ────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-purple { background: var(--purple-dim); color: var(--purple-light); border: 1px solid var(--purple); }
+.badge-teal   { background: var(--teal-dim);   color: var(--teal); border: 1px solid rgba(46,219,176,0.3); }
+.badge-warn   { background: rgba(245,166,35,0.15); color: var(--warning); }
+.badge-danger { background: rgba(240,79,90,0.15);  color: var(--danger); }
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 12px 0;
+}
+
+/* ── Toggle switch ───────────────────────────────────────────────────────── */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toggle {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  cursor: pointer;
+}
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  transition: var(--transition);
+}
+.toggle input:checked + .toggle-track { background: var(--purple); border-color: var(--purple); }
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: var(--transition);
+  pointer-events: none;
+}
+.toggle input:checked ~ .toggle-thumb { transform: translateX(22px); }
+
+/* ── Map info card (purple box top-right from reference) ─────────────────── */
+.map-info-card {
+  background: var(--purple);
+  border-radius: var(--r-lg);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-btn);
+}
+.map-info-card .distance {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+}
+.map-info-card .distance span { font-size: 14px; font-weight: 400; margin-left: 3px; }
+.map-info-card .time { color: rgba(255,255,255,0.85); font-size: 13px; margin-top: 2px; }
+.map-info-card .fastest { color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; }
+
+/* ── Driver card (right screen bottom card in reference) ─────────────────── */
+.driver-card {
+  background: var(--bg-elevated);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding: 20px;
+  border-top: 1px solid var(--border);
+}
+.driver-card .on-way {
+  font-size: 11px;
+  color: var(--teal);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* ── Page transitions ────────────────────────────────────────────────────── */
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.page-enter { animation: slideUp 320ms cubic-bezier(0.4,0,0.2,1) both; }
+.fade-in    { animation: fadeIn 280ms ease both; }
+
+/* ── Splash screen logo pulse ────────────────────────────────────────────── */
+@keyframes logoPulse {
+  0%, 100% { filter: drop-shadow(0 0 16px rgba(124,79,224,0.6)); }
+  50%       { filter: drop-shadow(0 0 40px rgba(124,79,224,1)); }
+}
+.logo-pulse { animation: logoPulse 2.4s ease-in-out infinite; }
+
+/* ── Loading spinner ─────────────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 24px; height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── Skeleton loader ─────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-surface) 50%, var(--bg-elevated) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--r-sm);
+}
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.toast-wrap {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+}
+.toast {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: 10px 20px;
+  font-size: 14px;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+  white-space: nowrap;
+}
+.toast.success { border-color: var(--teal); color: var(--teal); }
+.toast.error   { border-color: var(--danger); color: var(--danger); }
+
+/* ── Map overlay buttons (< and ⊕ from left screen) ────────────────────── */
+.map-btn {
+  width: 44px; height: 44px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.map-btn:hover { border-color: var(--purple); }
+
+/* ── Location row (pickup / dropoff) ─────────────────────────────────────── */
+.location-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.location-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.location-dot.pickup  { background: var(--purple); box-shadow: 0 0 8px var(--purple); }
+.location-dot.dropoff { background: var(--teal);   box-shadow: 0 0 8px var(--teal); }
+.location-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.location-sub  { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+
+/* ── Misc helpers ────────────────────────────────────────────────────────── */
+.flex  { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.gap-5 { gap: 20px; }
+.w-full { width: 100%; }
+.text-sm { font-size: 13px; }
+.text-xs { font-size: 11px; }
+.text-muted { color: var(--text-secondary); }
+.text-center { text-align: center; }
+.font-bold { font-weight: 700; }
+.font-display { font-family: var(--font-display); }
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-4 { margin-bottom: 16px; }
+.p-4  { padding: 16px; }
+.p-5  { padding: 20px; }
+.px-4 { padding-left: 16px; padding-right: 16px; }
+.py-2 { padding-top: 8px; padding-bottom: 8px; }
+.flex-1 { flex: 1; }
+.overflow-hidden { overflow: hidden; }
+.relative { position: relative; }
+.absolute { position: absolute; }
+.z-10 { z-index: 10; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
