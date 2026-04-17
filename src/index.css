@@ -128,7 +128,26 @@ h3 { font-size: 17px; font-weight: 600; }
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
-.scroll-area::-webkit-scrollbar { display: none; }
+.scroll-area {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--purple-dim) transparent;
+}
+.scroll-area::-webkit-scrollbar {
+  width: 4px;
+}
+.scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-area::-webkit-scrollbar-thumb {
+  background: var(--purple-dim);
+  border-radius: 4px;
+}
+.scroll-area::-webkit-scrollbar-thumb:hover {
+  background: var(--purple);
+}
 
 /* ── Glass card (the bottom sheet / location card in reference) ──────────── */
 .card {
