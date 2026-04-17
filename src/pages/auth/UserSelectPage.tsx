@@ -41,7 +41,7 @@ export default function UserSelectPage() {
 
         <div className="flex-col gap-3">
           <button
-            onClick={() => navigate("/register?role=PASSENGER")}
+            onClick={() => navigate("/login", { state: { role: "PASSENGER" } })}
             style={{
               display: "flex", alignItems: "center", gap: 16,
               background: "var(--bg-white)", border: "1.5px solid var(--border-light)",
@@ -68,7 +68,7 @@ export default function UserSelectPage() {
           </button>
 
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/login", { state: { role: "DRIVER" } })}
             style={{
               display: "flex", alignItems: "center", gap: 16,
               background: "var(--bg-white)", border: "1.5px solid var(--border-light)",
@@ -94,19 +94,6 @@ export default function UserSelectPage() {
             <span style={{ color: "var(--text-muted)" }}>{Icons.chevronRight}</span>
           </button>
         </div>
-
-        <button className="btn btn-primary" style={{ marginTop: 24 }}
-          onClick={() => navigate("/login")}>
-          Get Started
-        </button>
-
-        <p style={{ textAlign: "center", fontSize: 13, color: "var(--text-muted)", marginTop: 16 }}>
-          Already have an account?{" "}
-          <span style={{ color: "var(--orange)", fontWeight: 600, cursor: "pointer" }}
-            onClick={() => navigate("/login")}>
-            Sign in
-          </span>
-        </p>
       </div>
     </div>
   );

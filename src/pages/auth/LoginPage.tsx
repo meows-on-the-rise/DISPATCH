@@ -8,6 +8,7 @@ import { Icons, PageHeader } from "../../components/shared";
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const role = (location.state as { role?: "PASSENGER" | "DRIVER" })?.role ?? "PASSENGER";
   const { setAuth } = useAuthStore();
   const toast = useToast();
   const [identifier, setIdentifier] = useState("");
@@ -22,8 +23,8 @@ export default function LoginPage() {
     try {
       const { data } = await authApi.login(identifier, password);
       setAuth(data.user, data.accessToken, data.refreshToken);
-      const role = data.user.role;
-      navigate(role === "DRIVER" ? "/driver" : role === "ADMIN" ? "/admin" : "/passenger");
+      const userRole = data.user.role;
+      navigate(userRole === "DRIVER" ? "/driver" : userRole === "ADMIN" ? "/admin" : "/passenger");
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Login failed";
       toast(msg, "error");
@@ -32,18 +33,16 @@ export default function LoginPage() {
 
   return (
     <div className="app-shell">
-      {/* Dark teal header */}
       <div className="header-dark" style={{ paddingTop: 56 }}>
         <button className="btn-icon-dark" onClick={() => navigate("/")} style={{ marginBottom: 24 }}>
           {Icons.back}
         </button>
-        <h2 style={{ color: "#fff", marginBottom: 6 }}>Welcome back</h2>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>Sign in to your Dispatch account</p>
+        <h2 style={{ color: "#fff", marginBottom: 6 }}>DISPATCH</h2>
+        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>Sign in to access your account</p>
       </div>
 
       <div className="scroll-area flex-1 px-5" style={{ paddingTop: 28 }}>
         <form onSubmit={handleLogin} className="flex-col gap-4 page-enter" style={{ paddingBottom: 32 }}>
-          {/* Identifier */}
           <div className="input-wrap">
             <label className="input-label">Username or Email</label>
             <div className="relative">
@@ -56,7 +55,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Password */}
           <div className="input-wrap">
             <label className="input-label">Password</label>
             <div className="relative">
@@ -88,17 +86,14 @@ export default function LoginPage() {
           </button>
 
           <p style={{ textAlign: "center", fontSize: 13, color: "var(--text-muted)" }}>
-  Don't have an account?{" "}
-  <span
-    style={{ color: "var(--orange)", fontWeight: 600, cursor: "pointer" }}
-    onClick={() => {
-      const isDriver = location.pathname.includes("/driver/");
-      navigate(isDriver ? "/userselect/driver/register?role=DRIVER" : "/userselect/passenger/register?role=PASSENGER");
-    }}
-  >
-    Register
-  </span>
-</p>
+            Don't have an account?{" "}
+            <span
+              style={{ color: "var(--orange)", fontWeight: 600, cursor: "pointer" }}
+              onClick={() => navigate(role === "DRIVER" ? "/register?role=DRIVER" : "/register?role=PASSENGER")}
+            >
+              Register
+            </span>
+          </p>
         </form>
       </div>
     </div>
