@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, AuthRequest } from "../middleware/auth.js";
-import { uploadAvatar } from "../lib/cloudinary.js";
+import { uploadAvatar, handleAvatarUpload } from "../lib/cloudinary.js";
 
 const router = Router();
 
@@ -42,12 +42,12 @@ router.post(
       res.status(400).json({ error: "No file uploaded" });
       return;
     }
-    const avatarUrl = (req.file as Express.Multer.File & { path: string }).path;
+    const { secure_url } = await handleAvatarUpload(req.file.buffer);
     await prisma.user.update({
       where: { id: req.user!.id },
-      data: { avatarUrl },
+      data: { avatarUrl: secure_url },
     });
-    res.json({ avatarUrl });
+    res.json({ avatarUrl: secure_url });
   }
 );
 
@@ -55,7 +55,7 @@ router.post(
 
 router.get("/:id/reviews", authenticate, async (req: AuthRequest, res: Response) => {
   const ratings = await prisma.rating.findMany({
-    where: { receiverId: req.params.id },
+    where: { receiverId: req.params.id as string },
     include: { giver: { select: { fullName: true, avatarUrl: true } } },
     orderBy: { createdAt: "desc" },
     take: 20,

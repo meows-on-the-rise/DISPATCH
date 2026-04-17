@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, AuthRequest } from "../middleware/auth.js";
-import { uploadDocument } from "../lib/cloudinary.js";
+import { uploadDocument, handleDocumentUpload } from "../lib/cloudinary.js";
 import { getIO } from "../socket/io.js";
 
 const router = Router();
@@ -91,7 +91,7 @@ router.post(
       return;
     }
 
-    const docType = req.params.docType.toUpperCase();
+    const docType = (req.params.docType as string).toUpperCase();
     if (!DOC_TYPES.includes(docType as (typeof DOC_TYPES)[number])) {
       res.status(400).json({ error: `docType must be one of ${DOC_TYPES.join(", ")}` });
       return;
@@ -102,7 +102,7 @@ router.post(
       return;
     }
 
-    const fileUrl = (req.file as Express.Multer.File & { path: string }).path;
+    const { secure_url: fileUrl } = await handleDocumentUpload(req.file.buffer);
     const profile = await prisma.driverProfile.findUnique({ where: { userId: req.user!.id } });
     if (!profile) {
       res.status(404).json({ error: "Driver profile not found" });
