@@ -69,7 +69,7 @@ router.post(
 
 router.get("/:id/reviews", authenticate, async (req: AuthRequest, res: Response) => {
   const ratings = await prisma.rating.findMany({
-    where: { receiverId: req.params.id },
+    where: { receiverId: String(req.params.id) },
     include: {
       giver: { select: { fullName: true, avatarUrl: true } },
     },

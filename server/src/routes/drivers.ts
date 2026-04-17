@@ -95,7 +95,7 @@ router.post(
       return;
     }
 
-    const docType = req.params.docType.toUpperCase();
+    const docType = String(req.params.docType).toUpperCase();
     if (!DOC_TYPES.includes(docType as (typeof DOC_TYPES)[number])) {
       res.status(400).json({
         error: `docType must be one of ${DOC_TYPES.join(", ")}`,
