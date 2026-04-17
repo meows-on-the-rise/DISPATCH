@@ -18,6 +18,7 @@ const httpServer = http.createServer(app);
 
 // ── Global middleware ─────────────────────────────────────────────────────────
 
+app.set("trust proxy", 1);
 app.use(helmet());
 app.use(
   cors({
