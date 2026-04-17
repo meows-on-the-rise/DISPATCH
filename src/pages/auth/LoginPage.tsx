@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { authApi } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
 import { useToast } from "../../lib/toast";
@@ -7,6 +7,7 @@ import { Icons, PageHeader } from "../../components/shared";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setAuth } = useAuthStore();
   const toast = useToast();
   const [identifier, setIdentifier] = useState("");
@@ -87,10 +88,17 @@ export default function LoginPage() {
           </button>
 
           <p style={{ textAlign: "center", fontSize: 13, color: "var(--text-muted)" }}>
-            Don't have an account?{" "}
-            <span style={{ color: "var(--orange)", fontWeight: 600, cursor: "pointer" }}
-              onClick={() => navigate("/")}>Register</span>
-          </p>
+  Don't have an account?{" "}
+  <span
+    style={{ color: "var(--orange)", fontWeight: 600, cursor: "pointer" }}
+    onClick={() => {
+      const isDriver = location.pathname.includes("/driver/");
+      navigate(isDriver ? "/userselect/driver/register?role=DRIVER" : "/userselect/passenger/register?role=PASSENGER");
+    }}
+  >
+    Register
+  </span>
+</p>
         </form>
       </div>
     </div>

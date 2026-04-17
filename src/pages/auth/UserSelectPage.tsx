@@ -68,7 +68,7 @@ export default function UserSelectPage() {
           </button>
 
           <button
-            onClick={() => navigate("/register?role=DRIVER")}
+            onClick={() => navigate("/login")}
             style={{
               display: "flex", alignItems: "center", gap: 16,
               background: "var(--bg-white)", border: "1.5px solid var(--border-light)",
@@ -96,7 +96,7 @@ export default function UserSelectPage() {
         </div>
 
         <button className="btn btn-primary" style={{ marginTop: 24 }}
-          onClick={() => navigate("/register?role=PASSENGER")}>
+          onClick={() => navigate("/login")}>
           Get Started
         </button>
 
