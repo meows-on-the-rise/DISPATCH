@@ -66,46 +66,46 @@ api.interceptors.response.use(
 // ── Typed API methods ─────────────────────────────────────────────────────────
 
 export const authApi = {
-  register: (body: RegisterBody) => api.post("/auth/register", body),
-  login: (identifier: string, password: string) =>
+  register:      (body: RegisterBody) => api.post("/auth/register", body),
+  login:         (identifier: string, password: string) =>
     api.post("/auth/login", { identifier, password }),
-  logout: (refreshToken: string) => api.post("/auth/logout", { refreshToken }),
-  me: () => api.get("/auth/me"),
-  forgotPassword: (email: string) => api.post("/auth/forgot-password", { email }),
+  logout:        (refreshToken: string) => api.post("/auth/logout", { refreshToken }),
+  me:            () => api.get("/auth/me"),
+  forgotPassword:(email: string) => api.post("/auth/forgot-password", { email }),
   resetPassword: (email: string, otp: string, newPassword: string) =>
     api.post("/auth/reset-password", { email, otp, newPassword }),
 };
 
 export const userApi = {
   updateProfile: (body: Partial<ProfileBody>) => api.patch("/users/profile", body),
-  uploadAvatar: (file: File) => {
+  uploadAvatar:  (file: File) => {
     const fd = new FormData();
     fd.append("avatar", file);
     return api.post("/users/avatar", fd, { headers: { "Content-Type": "multipart/form-data" } });
   },
   getReviews: (userId: string) => api.get(`/users/${userId}/reviews`),
-  getStats: () => api.get("/users/stats"),
+  getStats:   () => api.get("/users/stats"),
 };
 
 export const walletApi = {
-  getBalance: () => api.get("/wallet"),
-  getTransactions: () => api.get("/wallet/transactions"),
-  deposit: (amount: number, method: string) => api.post("/wallet/deposit", { amount, method }),
-  withdraw: (amount: number, method: string) => api.post("/wallet/withdraw", { amount, method }),
+  getBalance:     () => api.get("/wallet"),
+  getTransactions:() => api.get("/wallet/transactions"),
+  deposit:        (amount: number, method: string) => api.post("/wallet/deposit", { amount, method }),
+  withdraw:       (amount: number, method: string) => api.post("/wallet/withdraw", { amount, method }),
 };
 
 export const tripApi = {
-  estimate: (body: EstimateBody) => api.post("/trips/estimate", body),
-  create: (body: CreateTripBody) => api.post("/trips", body),
+  estimate:     (body: EstimateBody) => api.post("/trips/estimate", body),
+  create:       (body: CreateTripBody) => api.post("/trips", body),
   getAvailable: () => api.get("/trips/available"),
-  getHistory: () => api.get("/trips"),
-  getOne: (id: string) => api.get(`/trips/${id}`),
-  accept: (id: string) => api.post(`/trips/${id}/accept`),
-  arrived: (id: string) => api.post(`/trips/${id}/arrived`),
-  start: (id: string) => api.post(`/trips/${id}/start`),
-  complete: (id: string) => api.post(`/trips/${id}/complete`),
-  cancel: (id: string, reason?: string) => api.post(`/trips/${id}/cancel`, { reason }),
-  rate: (id: string, score: number, review?: string) =>
+  getHistory:   () => api.get("/trips"),
+  getOne:       (id: string) => api.get(`/trips/${id}`),
+  accept:       (id: string) => api.post(`/trips/${id}/accept`),
+  arrived:      (id: string) => api.post(`/trips/${id}/arrived`),
+  start:        (id: string) => api.post(`/trips/${id}/start`),
+  complete:     (id: string) => api.post(`/trips/${id}/complete`),
+  cancel:       (id: string, reason?: string) => api.post(`/trips/${id}/cancel`, { reason }),
+  rate:         (id: string, score: number, review?: string) =>
     api.post(`/trips/${id}/rate`, { score, review }),
 };
 
@@ -124,13 +124,35 @@ export const driverApi = {
 };
 
 export const adminApi = {
+  // Documents
   getPendingDocs: () => api.get("/admin/documents/pending"),
-  reviewDoc: (id: string, status: "VERIFIED" | "REJECTED", reviewNote?: string) =>
+  reviewDoc:      (id: string, status: "VERIFIED" | "REJECTED", reviewNote?: string) =>
     api.patch(`/admin/documents/${id}`, { status, reviewNote }),
-  getUsers: (role?: string, page = 1) =>
-    api.get("/admin/users", { params: { role, page } }),
-  getTrips: () => api.get("/admin/trips"),
+
+  // Users — CRUD + search
+  getUsers:   (role?: string, page = 1, search = "") =>
+    api.get("/admin/users", { params: { role, page, search } }),
+  getUser:    (id: string) => api.get(`/admin/users/${id}`),
+  updateUser: (id: string, body: AdminUpdateUserBody) =>
+    api.patch(`/admin/users/${id}`, body),
+  deleteUser: (id: string) => api.delete(`/admin/users/${id}`),
+
+  // Trips — view + search + cancel
+  getTrips:   (search = "", status = "") =>
+    api.get("/admin/trips", { params: { search, status } }),
+  cancelTrip: (id: string, reason: string) =>
+    api.patch(`/admin/trips/${id}`, { status: "CANCELLED", cancelReason: reason }),
+
+  // Stats
   getStats: () => api.get("/admin/stats"),
+
+  // Reports
+  getReportTripSummary:      (params?: { from?: string; to?: string; status?: string }) =>
+    api.get("/reports/trip-summary", { params }),
+  getReportDriverEarnings:   () => api.get("/reports/driver-earnings"),
+  getReportPassengerActivity:() => api.get("/reports/passenger-activity"),
+  getReportPlatformRevenue:  (days = 30) =>
+    api.get("/reports/platform-revenue", { params: { days } }),
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -148,4 +170,7 @@ export interface EstimateBody {
 }
 export interface CreateTripBody extends EstimateBody {
   pickupAddress: string; dropoffAddress: string; seats?: number;
+}
+export interface AdminUpdateUserBody {
+  fullName?: string; phone?: string; role?: "PASSENGER" | "DRIVER" | "ADMIN"; newPassword?: string;
 }
