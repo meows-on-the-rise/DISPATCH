@@ -24,7 +24,11 @@ export default function LoginPage() {
       const { data } = await authApi.login(identifier, password);
       setAuth(data.user, data.accessToken, data.refreshToken);
       const userRole = data.user.role;
-      navigate(userRole === "DRIVER" ? "/driver" : userRole === "ADMIN" ? "/admin" : "/passenger");
+     if (userRole === "ADMIN") {
+  navigate("/admin/verify", { state: { from: role } });
+} else {
+  navigate(userRole === "DRIVER" ? "/driver" : "/passenger");
+}
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Login failed";
       toast(msg, "error");
