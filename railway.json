@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "cd server && npm run build && npx prisma db push --accept-data-loss && npm start",
+    "startCommand": "cd server && npx prisma db push --accept-data-loss && npx tsx src/index.ts",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }
