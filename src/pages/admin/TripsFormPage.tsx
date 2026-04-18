@@ -111,7 +111,126 @@ function CancelModal({
 
 // ── Trip detail card ──────────────────────────────────────────────────────────
 
-function TripCard({ trip, onCancel }: { trip: AdminTrip; onCancel: () => void }) {
+function EditTripModal({
+  trip, onClose, onSaved,
+}: { trip: AdminTrip; onClose: () => void; onSaved: (t: AdminTrip) => void }) {
+  const toast = useToast();
+  const [pickupAddress,  setPickupAddress]  = useState(trip.pickupAddress);
+  const [dropoffAddress, setDropoffAddress] = useState(trip.dropoffAddress);
+  const [seats,          setSeats]          = useState(trip.seats);
+  const [status,         setStatus]         = useState(trip.status);
+  const [saving,         setSaving]         = useState(false);
+  const [errors,         setErrors]         = useState<Record<string, string>>({});
+
+  function validate() {
+    const e: Record<string, string> = {};
+    if (!pickupAddress.trim())  e.pickup  = "Pickup address is required";
+    if (!dropoffAddress.trim()) e.dropoff = "Dropoff address is required";
+    if (seats < 1 || seats > 8) e.seats   = "Seats must be between 1 and 8";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  async function handleSave() {
+    if (!validate()) return;
+    setSaving(true);
+    try {
+      const { data } = await adminApi.updateTrip(trip.id, {
+        pickupAddress: pickupAddress.trim(),
+        dropoffAddress: dropoffAddress.trim(),
+        seats,
+        status,
+      });
+      toast("Trip updated", "success");
+      onSaved({ ...trip, ...data });
+    } catch (err: any) {
+      toast(err?.response?.data?.error ?? "Update failed", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(13,45,53,0.7)",
+      zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center",
+    }} onClick={onClose}>
+      <div className="page-enter" onClick={e => e.stopPropagation()} style={{
+        background: "var(--bg-white)", borderRadius: "var(--r-xl) var(--r-xl) 0 0",
+        padding: "24px 20px 36px", width: "100%", maxWidth: 430,
+      }}>
+        <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 99, margin: "0 auto 20px" }} />
+        
+        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 20 }}>Edit Trip</div>
+
+        {/* Pickup */}
+        <div className="input-wrap" style={{ marginBottom: 14 }}>
+          <label className="input-label">Pickup Address</label>
+          <input
+            className="input"
+            value={pickupAddress}
+            onChange={e => { setPickupAddress(e.target.value); setErrors(p => ({ ...p, pickup: "" })); }}
+            placeholder="Pickup address"
+            style={errors.pickup ? { borderColor: "var(--danger)" } : {}}
+          />
+          {errors.pickup && <span style={{ fontSize: 11, color: "var(--danger)" }}>{errors.pickup}</span>}
+        </div>
+
+        {/* Dropoff */}
+        <div className="input-wrap" style={{ marginBottom: 14 }}>
+          <label className="input-label">Dropoff Address</label>
+          <input
+            className="input"
+            value={dropoffAddress}
+            onChange={e => { setDropoffAddress(e.target.value); setErrors(p => ({ ...p, dropoff: "" })); }}
+            placeholder="Dropoff address"
+            style={errors.dropoff ? { borderColor: "var(--danger)" } : {}}
+          />
+          {errors.dropoff && <span style={{ fontSize: 11, color: "var(--danger)" }}>{errors.dropoff}</span>}
+        </div>
+
+        {/* Seats */}
+        <div className="input-wrap" style={{ marginBottom: 14 }}>
+          <label className="input-label">Seats</label>
+          <input
+            className="input"
+            type="number"
+            min={1}
+            max={8}
+            value={seats}
+            onChange={e => { setSeats(Number(e.target.value)); setErrors(p => ({ ...p, seats: "" })); }}
+            style={errors.seats ? { borderColor: "var(--danger)" } : {}}
+          />
+          {errors.seats && <span style={{ fontSize: 11, color: "var(--danger)" }}>{errors.seats}</span>}
+        </div>
+
+        {/* Status */}
+        <div className="input-wrap" style={{ marginBottom: 20 }}>
+          <label className="input-label">Status</label>
+          <select
+            className="input"
+            value={status}
+            onChange={e => setStatus(e.target.value)}
+            style={{ cursor: "pointer" }}
+          >
+            {["REQUESTED", "DRIVER_ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"].map(s => (
+              <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex gap-2">
+          <button className="btn btn-outline" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSave} disabled={saving}>
+            {saving ? <span className="spinner spinner-dark" /> : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TripCard({ trip, onCancel, onEdit }: { trip: AdminTrip; onCancel: () => void; onEdit: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const color = STATUS_COLORS[trip.status] ?? "var(--teal)";
   const canCancel = !["COMPLETED", "CANCELLED"].includes(trip.status);
@@ -213,16 +332,24 @@ function TripCard({ trip, onCancel }: { trip: AdminTrip; onCancel: () => void })
               Cancelled: {trip.cancelReason}
             </div>
           )}
-
-          {canCancel && (
+          <div className="flex gap-2">
             <button
-              className="btn"
-              style={{ width: "100%", background: "rgba(239,68,68,0.1)", color: "var(--danger)", border: "1.5px solid rgba(239,68,68,0.2)", borderRadius: "var(--r-pill)" }}
-              onClick={onCancel}
+              className="btn btn-outline"
+              style={{ flex: 1 }}
+              onClick={onEdit}
             >
-              {Icons.x} Cancel This Trip
+              {Icons.check} Edit
             </button>
-          )}
+            {canCancel && (
+              <button
+                className="btn"
+                style={{ flex: 1, background: "rgba(239,68,68,0.1)", color: "var(--danger)", border: "1.5px solid rgba(239,68,68,0.2)", borderRadius: "var(--r-pill)" }}
+                onClick={onCancel}
+              >
+                {Icons.x} Cancel
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -238,6 +365,12 @@ export default function TripsFormPage() {
   const [search,   setSearch]   = useState("");
   const [filter,   setFilter]   = useState("ALL");
   const [cancelTarget, setCancelTarget] = useState<AdminTrip | null>(null);
+  const [editTarget, setEditTarget] = useState<AdminTrip | null>(null);
+
+function handleSaved(updated: AdminTrip) {
+  setTrips(ts => ts.map(t => t.id === updated.id ? updated : t));
+  setEditTarget(null);
+}
 
   const load = useCallback(async (s = search, f = filter) => {
     setLoading(true);
@@ -317,12 +450,16 @@ export default function TripsFormPage() {
         )}
 
         {!loading && trips.map(t => (
-          <TripCard key={t.id} trip={t} onCancel={() => setCancelTarget(t)} />
+        <TripCard key={t.id} trip={t} onCancel={() => setCancelTarget(t)} onEdit={() => setEditTarget(t)} />
         ))}
       </div>
 
       {cancelTarget && (
         <CancelModal trip={cancelTarget} onClose={() => setCancelTarget(null)} onCancelled={handleCancelled} />
+      )}
+
+      {editTarget && (
+      <EditTripModal trip={editTarget} onClose={() => setEditTarget(null)} onSaved={handleSaved} />
       )}
     </div>
   );
