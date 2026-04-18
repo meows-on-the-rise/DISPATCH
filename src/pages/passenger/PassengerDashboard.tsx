@@ -24,7 +24,6 @@ export default function PassengerDashboard() {
     { icon: Icons.wallet,   label: "Wallet",      path: "/passenger/wallet",   disabled: false },
     { icon: Icons.activity, label: "Activity",    path: "/passenger/activity", disabled: false },
     { icon: Icons.stats,    label: "Stats",       path: "/passenger/stats",    disabled: false },
-    { icon: Icons.car,      label: "Request Ride",path: "/passenger/request",  disabled: balance <= 0 },
   ];
 
   return (
@@ -43,25 +42,13 @@ export default function PassengerDashboard() {
           <BalanceBadge amount={balance} />
         </div>
 
-        <h2 style={{ color: "#fff", marginBottom: 4 }}>Find your ride,</h2>
-        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginBottom: 20 }}>where would you like to go?</p>
-
-        {/* Search bar — tappable, goes to request page */}
-        <button onClick={() => navigate("/passenger/request")} style={{
-          width: "100%", background: "#fff", border: "none", borderRadius: "var(--r-xl)",
-          padding: "14px 20px", display: "flex", alignItems: "center", gap: 12,
-          cursor: "pointer", boxShadow: "var(--shadow-md)",
-        }}>
-          <span style={{ color: "var(--orange)" }}>{Icons.search}</span>
-          <span style={{ fontSize: 14, color: "var(--text-muted)", fontFamily: "var(--font)", fontWeight: 500 }}>
-            Where to?
-          </span>
-        </button>
+        <h2 style={{ color: "#fff", marginBottom: 4 }}>Where to?</h2>
+        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginBottom: 20 }}>Be on your way in a jiffy!</p>
       </div>
 
-      <div className="scroll-area flex-1 px-5" style={{ paddingTop: 24, paddingBottom: 24 }}>
+      <div className="scroll-area flex-1 px-5" style={{ paddingTop: 26, paddingBottom: 26 }}>
         {/* Icon grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 28 }}>
           {icons.map(({ icon, label, path, disabled }) => (
             <IconBtn key={label} icon={icon} label={label}
               onClick={() => !disabled && navigate(path)} disabled={disabled} />
@@ -71,7 +58,6 @@ export default function PassengerDashboard() {
         {/* Stats strip */}
         <div className="card flex gap-3" style={{ padding: "16px 20px", marginBottom: 24 }}>
           {[
-            { label: "Balance",  value: `M ${balance.toFixed(2)}`, color: "var(--orange)" },
             { label: "Trips",    value: user?.reviewCount ?? 0,   color: "var(--teal)" },
             { label: "Rating",   value: user?.rating?.toFixed(1) ?? "5.0", color: "var(--teal-mid)" },
           ].map((s, i) => (
@@ -88,7 +74,7 @@ export default function PassengerDashboard() {
         {/* CTA */}
         <button className="btn btn-primary" onClick={() => navigate("/passenger/request")}
           disabled={balance <= 0} style={{ marginBottom: 12 }}>
-          {balance <= 0 ? "Top up wallet to book a ride" : "Book a Ride"}
+          {balance <= 0 ? "Top up wallet to request a ride" : "Request a Ride"}
         </button>
         {balance <= 0 && (
           <button className="btn btn-outline" onClick={() => navigate("/passenger/wallet")}>

@@ -58,21 +58,11 @@ export default function ProfilePage() {
         <div className="page-enter flex-col gap-4" style={{ paddingBottom: 32 }}>
           {/* Avatar picker */}
           <div className="flex-col items-center gap-3" style={{ paddingTop: 8, paddingBottom: 4 }}>
-            <div style={{ position: "relative" }}>
+            <div
+              onClick={() => !avatarLoading && fileRef.current?.click()}
+              style={{ position: "relative", cursor: "pointer" }}
+            >
               <Avatar src={user?.avatarUrl} name={user?.fullName ?? "?"} size={80} />
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={avatarLoading}
-                style={{
-                  position: "absolute", bottom: -4, right: -4,
-                  width: 28, height: 28, borderRadius: "50%",
-                  background: "var(--purple)", border: "2px solid var(--bg-base)",
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#fff", fontSize: 14,
-                }}
-              >
-                {avatarLoading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : "✏️"}
-              </button>
               <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
             </div>
             <div className="text-center">
@@ -81,7 +71,6 @@ export default function ProfilePage() {
               {user && <StarRating value={user.rating} count={user.reviewCount} />}
             </div>
           </div>
-
           <form onSubmit={save} className="flex-col gap-3">
             <div className="input-wrap">
               <label className="input-label">Full Name</label>

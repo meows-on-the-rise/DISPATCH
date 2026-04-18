@@ -152,7 +152,7 @@ async function main() {
 
   console.log("✅ Seed complete!");
   console.log("─────────────────────────────────────────");
-  console.log("Admin     →  admin@dispatch.app   / admin@dispatch.app");
+  console.log("Admin     →  admin@dispatch.app   / Admin@1234");
   console.log("Passenger →  passenger@dispatch.app / Pass@1234");
   console.log("Driver    →  driver@dispatch.app    / Pass@1234");
   console.log("─────────────────────────────────────────");

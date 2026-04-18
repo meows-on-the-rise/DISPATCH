@@ -116,44 +116,45 @@ router.post("/register", async (req: Request, res: Response) => {
 // ── POST /auth/login ──────────────────────────────────────────────────────────
 
 router.post("/login", async (req: Request, res: Response) => {
-  const parsed = loginSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.flatten() });
-    return;
+  try {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    const { identifier, password } = parsed.data;
+
+    const user = await prisma.user.findFirst({
+      where: { OR: [{ email: identifier }, { username: identifier }] },
+      include: {
+        wallet: { select: { balance: true } },
+        driverProfile: { select: { isClockedIn: true, isVerified: true, documents: true } },
+      },
+    });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      res.status(401).json({ error: "Invalid credentials" });
+      return;
+    }
+
+    const accessToken = signAccessToken({ id: user.id, role: user.role, userId: user.userId });
+    const refreshToken = signRefreshToken({ id: user.id });
+
+    await prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        token: refreshToken,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    const { password: _pw, ...safeUser } = user;
+    res.json({ user: safeUser, accessToken, refreshToken });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Internal server error", detail: String(err) });
   }
-
-  const { identifier, password } = parsed.data;
-
-  const user = await prisma.user.findFirst({
-    where: { OR: [{ email: identifier }, { username: identifier }] },
-    include: {
-      wallet: { select: { balance: true } },
-      driverProfile: { select: { isClockedIn: true, isVerified: true, documents: true } },
-    },
-  });
-
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    res.status(401).json({ error: "Invalid credentials" });
-    return;
-  }
-
-  const accessToken = signAccessToken({
-    id: user.id,
-    role: user.role,
-    userId: user.userId,
-  });
-  const refreshToken = signRefreshToken({ id: user.id });
-
-  await prisma.refreshToken.create({
-    data: {
-      userId: user.id,
-      token: refreshToken,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
-  });
-
-  const { password: _pw, ...safeUser } = user;
-  res.json({ user: safeUser, accessToken, refreshToken });
 });
 
 // ── POST /auth/refresh ────────────────────────────────────────────────────────

@@ -39,7 +39,6 @@ export default function DriverDashboard() {
     { icon: Icons.activity, label: "Activity",  path: "/driver/activity" },
     { icon: Icons.stats,    label: "Stats",     path: "/driver/stats" },
     { icon: Icons.document, label: "Documents", path: "/driver/documents" },
-    ...(isClockedIn ? [{ icon: Icons.search, label: "Find Rides", path: "/driver/find" }] : []),
   ];
 
   return (
@@ -56,15 +55,14 @@ export default function DriverDashboard() {
           </button>
           <div className="flex items-center gap-3">
             <Toggle checked={isClockedIn} onChange={handleClock} />
-            <BalanceBadge amount={balance} />
           </div>
         </div>
 
         <h2 style={{ color: "#fff", marginBottom: 4 }}>
-          {isClockedIn ? "You're online" : "Ready to drive?"}
+          {isClockedIn ? "You're online!" : "Ready to Drive?"}
         </h2>
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14 }}>
-          {isClockedIn ? "New ride requests will appear instantly" : "Clock in to start accepting rides"}
+          {isClockedIn ? "Take ride requests to earn" : "Clock in to start accepting rides"}
         </p>
       </div>
 
