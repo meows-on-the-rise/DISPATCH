@@ -1,3 +1,5 @@
+import dispatchLogo from '../assets/apple-touch-icon.png';
+
 const LoadingScreen = () => {
   return (
     <div style={{
@@ -10,7 +12,11 @@ const LoadingScreen = () => {
       backgroundColor: '#0f0f0f',
       zIndex: 9999,
     }}>
-      <img src="/logo.png" alt="Dispatch" style={{ width: 80, marginBottom: 24 }} />
+      <img
+        src={dispatchLogo}
+        alt="Dispatch"
+        style={{ width: 100, borderRadius: 24, marginBottom: 20 }}
+      />
       <h1 style={{ color: '#fff', fontSize: 28, fontWeight: 700, marginBottom: 32 }}>
         Dispatch
       </h1>
