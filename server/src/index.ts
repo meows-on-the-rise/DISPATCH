@@ -41,7 +41,7 @@ app.use(
 // Stricter limiter on auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "production" ? 20 : 1000,
+  max: process.env.NODE_ENV === "production" ? 200 : 1000,
   message: { error: "Too many requests, please try again later" },
   skip: (req) => req.path === "/me", // never rate-limit the session check
 });
