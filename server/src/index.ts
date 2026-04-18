@@ -22,10 +22,8 @@ app.set("trust proxy", 1);
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production"
-      ? process.env.FRONTEND_URL
-      : "*",
-    credentials: process.env.NODE_ENV === "production",
+    origin: "*",
+    credentials: false,
   })
 );
 app.use(express.json({ limit: "10mb" }));

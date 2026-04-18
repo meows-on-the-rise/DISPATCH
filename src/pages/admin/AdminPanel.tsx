@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { adminApi } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
 import { useToast } from "../../lib/toast";
-import { PageHeader } from "../../components/shared";
+import { Icons } from "../../components/shared";
 
 interface Doc {
   id: string; docType: string; status: string; fileUrl: string;
@@ -21,106 +21,94 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const [docsRes, statsRes] = await Promise.all([adminApi.getPendingDocs(), adminApi.getStats()]);
-        setDocs(docsRes.data);
-        setStats(statsRes.data);
-      } finally { setLoading(false); }
-    })();
+    setLoading(true);
+    Promise.all([adminApi.getPendingDocs(), adminApi.getStats()])
+      .then(([d, s]) => { setDocs(d.data); setStats(s.data); })
+      .finally(() => setLoading(false));
   }, []);
 
   async function reviewDoc(id: string, status: "VERIFIED" | "REJECTED", note?: string) {
     try {
       await adminApi.reviewDoc(id, status, note);
-      setDocs((d) => d.filter((x) => x.id !== id));
+      setDocs(d => d.filter(x => x.id !== id));
       toast(`Document ${status.toLowerCase()}`, status === "VERIFIED" ? "success" : "error");
     } catch { toast("Action failed", "error"); }
   }
 
   return (
     <div className="app-shell">
-      <PageHeader
-        title="Admin Panel"
-        right={
-          <button onClick={() => { logout(); navigate("/"); }}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger)", fontSize: 13 }}>
-            Sign out
-          </button>
-        }
-      />
-
-      <div style={{ padding: "0 16px 12px" }}>
-        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Welcome, {user?.fullName}</p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex px-4" style={{ gap: 0, marginBottom: 16 }}>
-        {(["docs", "stats"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} style={{
-            flex: 1, padding: "10px 0", background: "none", border: "none",
-            borderBottom: `2px solid ${tab === t ? "var(--purple)" : "var(--border-subtle)"}`,
-            color: tab === t ? "var(--purple-light)" : "var(--text-muted)",
-            fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 14, cursor: "pointer",
+      <div className="header-dark" style={{ paddingTop: 48, paddingBottom: 24 }}>
+        <div className="flex justify-between items-center" style={{ marginBottom: 20 }}>
+          <div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>Administrator</div>
+            <div style={{ fontWeight: 700, fontSize: 17, color: "#fff" }}>{user?.fullName}</div>
+          </div>
+          <button onClick={() => { logout(); navigate("/"); }} style={{
+            background: "rgba(239,68,68,0.2)", border: "none", borderRadius: "var(--r-md)",
+            padding: "8px 14px", cursor: "pointer", color: "#fff", fontSize: 13,
+            fontWeight: 600, display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font)",
           }}>
-            {t === "docs" ? `📄 Pending Docs ${docs.length > 0 ? `(${docs.length})` : ""}` : "📊 Stats"}
+            {Icons.logout} Sign out
           </button>
-        ))}
+        </div>
+        <div className="tab-switch">
+          {(["docs", "stats"] as const).map(t => (
+            <button key={t} className={`tab-switch-item ${tab === t ? "active" : ""}`}
+              onClick={() => setTab(t)}>
+              {t === "docs" ? `Pending Docs${docs.length > 0 ? ` (${docs.length})` : ""}` : "Platform Stats"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="scroll-area flex-1 px-4">
+      <div className="scroll-area flex-1 px-5" style={{ paddingTop: 20, paddingBottom: 32 }}>
         {loading && <div className="flex justify-center" style={{ padding: 32 }}><span className="spinner" /></div>}
 
         {/* Pending documents */}
         {!loading && tab === "docs" && (
-          <div className="flex-col gap-3" style={{ paddingBottom: 24 }}>
+          <div className="flex-col gap-3">
             {docs.length === 0 && (
-              <p className="text-center text-muted" style={{ padding: 32, fontSize: 14 }}>
-                ✅ No pending documents
-              </p>
+              <div className="card text-center" style={{ padding: 48 }}>
+                <div style={{ color: "var(--success)", display: "flex", justifyContent: "center", marginBottom: 12 }}>{Icons.check}</div>
+                <div style={{ fontWeight: 600 }}>All caught up!</div>
+                <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>No pending documents</div>
+              </div>
             )}
-            {docs.map((doc) => (
-              <div key={doc.id} className="card-elevated" style={{ padding: 16 }}>
+            {docs.map(doc => (
+              <div key={doc.id} className="card" style={{ padding: 18 }}>
                 <div className="flex justify-between items-start" style={{ marginBottom: 12 }}>
                   <div>
-                    <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15 }}>
-                      {doc.driverProfile.user.fullName}
-                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{doc.driverProfile.user.fullName}</div>
                     <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                       {doc.driverProfile.user.userId} · {doc.driverProfile.user.email}
                     </div>
                   </div>
-                  <span className="badge badge-warn">{doc.docType}</span>
+                  <span className="badge badge-orange">{doc.docType}</span>
                 </div>
 
-                {/* Doc preview */}
+                {/* Document preview */}
                 <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" style={{
                   display: "block", height: 120, borderRadius: "var(--r-md)",
-                  background: "var(--bg-base)", overflow: "hidden", marginBottom: 12,
-                  border: "1px solid var(--border)",
+                  background: "var(--bg-input)", overflow: "hidden", marginBottom: 14,
+                  border: "1.5px solid var(--border)",
                 }}>
-                  {doc.fileUrl.match(/\.(jpg|jpeg|png|webp)/i) ? (
-                    <img src={doc.fileUrl} alt={doc.docType} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <div className="flex-col items-center justify-center" style={{ height: "100%", gap: 8 }}>
-                      <span style={{ fontSize: 32 }}>📄</span>
-                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>View PDF</span>
-                    </div>
-                  )}
+                  {doc.fileUrl.match(/\.(jpg|jpeg|png|webp)/i)
+                    ? <img src={doc.fileUrl} alt={doc.docType} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <div className="flex-col items-center justify-center" style={{ height: "100%", gap: 8, display: "flex" }}>
+                        <span style={{ color: "var(--teal)" }}>{Icons.document}</span>
+                        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>View PDF</span>
+                      </div>
+                  }
                 </a>
 
                 <div className="flex gap-2">
-                  <button className="btn btn-teal" style={{ flex: 1 }}
+                  <button className="btn btn-primary" style={{ flex: 1, background: "var(--success)", boxShadow: "none" }}
                     onClick={() => reviewDoc(doc.id, "VERIFIED")}>
-                    ✓ Verify
+                    Verify
                   </button>
-                  <button className="btn btn-ghost" style={{ flex: 1, color: "var(--danger)", borderColor: "var(--danger)" }}
-                    onClick={() => {
-                      const note = prompt("Rejection reason (optional):") ?? undefined;
-                      reviewDoc(doc.id, "REJECTED", note);
-                    }}>
-                    ✗ Reject
+                  <button className="btn btn-outline" style={{ flex: 1, borderColor: "var(--danger)", color: "var(--danger)" }}
+                    onClick={() => { const n = prompt("Rejection reason:") ?? undefined; reviewDoc(doc.id, "REJECTED", n); }}>
+                    Reject
                   </button>
                 </div>
               </div>
@@ -130,27 +118,34 @@ export default function AdminPanel() {
 
         {/* Stats */}
         {!loading && tab === "stats" && stats && (
-          <div style={{ paddingBottom: 24 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+          <div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               {[
-                { emoji: "🧍", label: "Passengers",    value: stats.passengers,    color: "var(--purple-light)" },
-                { emoji: "🚗", label: "Drivers",       value: stats.drivers,       color: "var(--teal)" },
-                { emoji: "🚕", label: "Total Trips",   value: stats.totalTrips,    color: "var(--warning)" },
-                { emoji: "✅", label: "Completed",     value: stats.completedTrips, color: "var(--teal)" },
-              ].map(({ emoji, label, value, color }) => (
-                <div key={label} className="card" style={{ padding: "20px 16px", textAlign: "center" }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>{emoji}</div>
-                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 24, color }}>{value}</div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{label}</div>
+                { icon: Icons.user,     label: "Passengers",      value: stats.passengers,      color: "var(--teal)" },
+                { icon: Icons.car,      label: "Drivers",          value: stats.drivers,          color: "var(--orange)" },
+                { icon: Icons.activity, label: "Total Trips",      value: stats.totalTrips,       color: "var(--teal-mid)" },
+                { icon: Icons.check,    label: "Completed",        value: stats.completedTrips,   color: "var(--success)" },
+              ].map(({ icon, label, value, color }) => (
+                <div key={label} className="card" style={{ padding: "18px 16px", textAlign: "center" }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: "var(--r-md)",
+                    background: `${color}18`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color, margin: "0 auto 10px",
+                  }}>{icon}</div>
+                  <div style={{ fontWeight: 800, fontSize: 22, color }}>{value}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>{label}</div>
                 </div>
               ))}
-              <div className="card" style={{ gridColumn: "1 / -1", padding: "20px 16px", textAlign: "center" }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>💰</div>
-                <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 28, color: "var(--teal)" }}>
-                  M {Number(stats.totalCommission).toFixed(2)}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Platform Commission Earned</div>
+            </div>
+            <div className="card" style={{ padding: "20px", textAlign: "center" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text-secondary)", marginBottom: 4 }}>
+                Platform Commission
               </div>
+              <div style={{ fontWeight: 800, fontSize: 36, color: "var(--orange)" }}>
+                M {Number(stats.totalCommission).toFixed(2)}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>Total earned (20% of all trips)</div>
             </div>
           </div>
         )}

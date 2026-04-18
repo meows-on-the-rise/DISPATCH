@@ -3,10 +3,10 @@ import { useNavigate } from "react-router";
 import { walletApi } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
 import { useToast } from "../../lib/toast";
-import { PageHeader } from "../../components/shared";
+import { Icons } from "../../components/shared";
 
 const METHODS = ["ECOCASH", "MPESA", "CARD"] as const;
-type Method = (typeof METHODS)[number];
+type Method = typeof METHODS[number];
 interface Transaction { id: string; type: string; amount: number; description: string; createdAt: string; }
 
 export default function DriverWalletPage() {
@@ -21,14 +21,10 @@ export default function DriverWalletPage() {
   const [withdrawing, setWithdrawing] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const [wRes, txRes] = await Promise.all([walletApi.getBalance(), walletApi.getTransactions()]);
-        setBalance(Number(wRes.data.balance));
-        setTransactions(txRes.data);
-      } finally { setLoading(false); }
-    })();
+    setLoading(true);
+    Promise.all([walletApi.getBalance(), walletApi.getTransactions()])
+      .then(([w, tx]) => { setBalance(Number(w.data.balance)); setTransactions(tx.data); })
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleWithdraw(e: React.FormEvent) {
@@ -40,84 +36,90 @@ export default function DriverWalletPage() {
     try {
       const { data } = await walletApi.withdraw(amt, method);
       setBalance(Number(data.balance));
-      toast(`M ${amt.toFixed(2)} withdrawn to ${method}!`, "success");
-      setAmount("");
-      refreshUser();
-      const txRes = await walletApi.getTransactions();
-      setTransactions(txRes.data);
+      toast(`M ${amt.toFixed(2)} withdrawn to ${method}`, "success");
+      setAmount(""); refreshUser();
+      const tx = await walletApi.getTransactions(); setTransactions(tx.data);
     } catch { toast("Withdrawal failed", "error"); }
     finally { setWithdrawing(false); }
   }
 
-  const typeColor = (t: string) => t === "TRIP_EARNING" ? "var(--teal)" : t === "WITHDRAWAL" ? "var(--danger)" : "var(--text-secondary)";
+  const isCredit = (t: string) => ["TRIP_EARNING", "DEPOSIT", "REFUND"].includes(t);
 
   return (
     <div className="app-shell">
-      <PageHeader title="Earnings" onBack={() => navigate("/driver")} />
-      <div className="scroll-area flex-1 px-4">
-        {/* Balance hero */}
-        <div className="card-elevated text-center page-enter" style={{ marginBottom: 20, padding: "28px 20px" }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+      <div className="header-dark" style={{ paddingTop: 48, paddingBottom: 32 }}>
+        <div className="flex items-center gap-3" style={{ marginBottom: 24 }}>
+          <button className="btn-icon-dark" onClick={() => navigate("/driver")}>{Icons.back}</button>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 17 }}>Earnings</span>
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
             Available to Withdraw
           </div>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 48, color: "var(--teal)", lineHeight: 1 }}>
-            M {balance.toFixed(2)}
+          <div style={{ fontWeight: 800, fontSize: 52, color: "#fff", lineHeight: 1 }}>
+            M <span style={{ color: "var(--orange)" }}>{balance.toFixed(2)}</span>
           </div>
         </div>
+      </div>
 
-        {/* Withdraw form */}
-        <div className="card" style={{ marginBottom: 20 }}>
-          <h3 style={{ fontFamily: "var(--font-display)", marginBottom: 16 }}>Withdraw Earnings</h3>
+      <div className="scroll-area flex-1 px-5" style={{ paddingTop: 24, paddingBottom: 32 }}>
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 16 }}>Withdraw Earnings</div>
           <form onSubmit={handleWithdraw} className="flex-col gap-3">
             <div className="flex gap-2 flex-wrap">
-              {[50, 100, 200].map((v) => (
+              {[50, 100, 200].map(v => (
                 <button key={v} type="button" onClick={() => setAmount(String(v))} style={{
-                  padding: "6px 14px", borderRadius: "var(--r-pill)", border: "1px solid var(--border)",
-                  background: amount === String(v) ? "var(--teal-dim)" : "var(--bg-elevated)",
+                  padding: "7px 16px", borderRadius: "var(--r-pill)",
+                  border: `1.5px solid ${amount === String(v) ? "var(--teal)" : "var(--border)"}`,
+                  background: amount === String(v) ? "var(--teal-dim)" : "var(--bg-input)",
                   color: amount === String(v) ? "var(--teal)" : "var(--text-secondary)",
-                  cursor: "pointer", fontSize: 14, fontWeight: 600,
+                  cursor: "pointer", fontSize: 13, fontWeight: 600,
                 }}>M {v}</button>
               ))}
             </div>
             <div className="input-wrap">
               <label className="input-label">Amount (M)</label>
               <input className="input" type="number" min="1" step="0.01"
-                value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount" />
+                value={amount} onChange={e => setAmount(e.target.value)} placeholder="Enter amount" />
             </div>
             <div className="flex gap-2">
-              {METHODS.map((m) => (
+              {METHODS.map(m => (
                 <button key={m} type="button" onClick={() => setMethod(m)} style={{
                   flex: 1, padding: "10px 8px", borderRadius: "var(--r-md)",
-                  border: `1px solid ${method === m ? "var(--teal)" : "var(--border)"}`,
-                  background: method === m ? "var(--teal-dim)" : "var(--bg-elevated)",
+                  border: `1.5px solid ${method === m ? "var(--teal)" : "var(--border)"}`,
+                  background: method === m ? "var(--teal-dim)" : "var(--bg-input)",
                   color: method === m ? "var(--teal)" : "var(--text-secondary)",
                   cursor: "pointer", fontSize: 12, fontWeight: 600,
-                }}>
-                  {m === "ECOCASH" ? "💚 EcoCash" : m === "MPESA" ? "📱 M-Pesa" : "💳 Card"}
-                </button>
+                }}>{m === "ECOCASH" ? "EcoCash" : m === "MPESA" ? "M-Pesa" : "Card"}</button>
               ))}
             </div>
-            <button className="btn btn-teal" type="submit" disabled={withdrawing || !amount}>
-              {withdrawing ? <span className="spinner" style={{ width: 20, height: 20 }} /> : "Withdraw"}
+            <button className="btn btn-dark" type="submit" disabled={withdrawing || !amount}>
+              {withdrawing ? <span className="spinner spinner-dark" style={{ width: 20, height: 20 }} /> : "Withdraw"}
             </button>
           </form>
         </div>
 
-        {/* History */}
-        <h3 style={{ fontFamily: "var(--font-display)", marginBottom: 12 }}>Earnings History</h3>
+        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Earnings History</div>
         {loading && <div className="flex justify-center" style={{ padding: 20 }}><span className="spinner" /></div>}
-        <div className="flex-col gap-2" style={{ paddingBottom: 24 }}>
-          {transactions.map((tx) => (
+        <div className="flex-col gap-2">
+          {transactions.map(tx => (
             <div key={tx.id} className="card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 22 }}>{tx.type === "TRIP_EARNING" ? "💵" : tx.type === "WITHDRAWAL" ? "🏦" : "💳"}</span>
+              <div style={{
+                width: 40, height: 40, borderRadius: "var(--r-md)",
+                background: isCredit(tx.type) ? "rgba(34,197,94,0.1)" : "rgba(249,115,22,0.1)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: isCredit(tx.type) ? "var(--success)" : "var(--orange)", flexShrink: 0,
+              }}>
+                {tx.type === "TRIP_EARNING" ? Icons.car : Icons.wallet}
+              </div>
               <div className="flex-1">
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{tx.description ?? tx.type}</div>
+                <div style={{ fontSize: 14, fontWeight: 500 }}>{tx.description ?? tx.type.replace(/_/g, " ")}</div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
                   {new Date(tx.createdAt).toLocaleString("en-LS", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                 </div>
               </div>
-              <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: typeColor(tx.type) }}>
-                {tx.type === "WITHDRAWAL" ? "-" : "+"}M {Number(tx.amount).toFixed(2)}
+              <span style={{ fontWeight: 700, fontSize: 15, color: isCredit(tx.type) ? "var(--success)" : "var(--danger)" }}>
+                {isCredit(tx.type) ? "+" : "-"}M {Number(tx.amount).toFixed(2)}
               </span>
             </div>
           ))}

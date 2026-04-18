@@ -6,7 +6,9 @@ import { useTripStore, Trip } from "../../store/tripStore";
 import { useSocket } from "../../hooks/useSocket";
 import { useGeolocation } from "../../hooks/useGeolocation";
 import { useToast } from "../../lib/toast";
-import { LocationCard, DriverCard, MapInfoCard, PageHeader } from "../../components/shared";
+import {
+  Icons, LocationCard, DriverCard, MapInfoCard, PageHeader,
+} from "../../components/shared";
 
 const DispatchMap = lazy(() => import("../../components/map/DispatchMap"));
 
@@ -27,30 +29,25 @@ export default function RequestRidePage() {
   const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [seats, setSeats] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [drivers, setDrivers] = useState<Trip[]>([]);
   const [ratingScore, setRatingScore] = useState(5);
   const [ratingReview, setRatingReview] = useState("");
+  const [settingPoint, setSettingPoint] = useState<"pickup" | "dropoff">("pickup");
 
-  // Restore active trip on mount
   useEffect(() => {
-    if (activeTrip && activeTrip.status !== "COMPLETED" && activeTrip.status !== "CANCELLED") {
-      setPhase("tracking");
-      joinTrip(activeTrip.id);
+    if (activeTrip && !["COMPLETED","CANCELLED"].includes(activeTrip.status)) {
+      setPhase("tracking"); joinTrip(activeTrip.id);
     }
   }, []);
 
-  // React to trip status changes
   useEffect(() => {
     if (!activeTrip) return;
     if (activeTrip.status === "COMPLETED") setPhase("rating");
     if (activeTrip.status === "CANCELLED") {
       toast("Trip was cancelled", "error");
-      setActiveTrip(null);
-      setPhase("input");
+      setActiveTrip(null); setPhase("input");
     }
   }, [activeTrip?.status]);
 
-  // Use device coords as default pickup
   useEffect(() => {
     if (coords && !pickupCoords) {
       setPickupCoords(coords);
@@ -59,18 +56,14 @@ export default function RequestRidePage() {
   }, [coords]);
 
   async function getEstimate() {
-    if (!pickupCoords || !dropoffCoords) {
-      toast("Set pickup and drop-off points on the map", "error");
-      return;
-    }
+    if (!pickupCoords || !dropoffCoords) { toast("Set both locations on the map", "error"); return; }
     setLoading(true);
     try {
       const { data } = await tripApi.estimate({
         pickupLat: pickupCoords.lat, pickupLng: pickupCoords.lng,
         dropoffLat: dropoffCoords.lat, dropoffLng: dropoffCoords.lng,
       });
-      setEstimate(data);
-      setPhase("estimate");
+      setEstimate(data); setPhase("estimate");
     } catch { toast("Could not calculate price", "error"); }
     finally { setLoading(false); }
   }
@@ -79,8 +72,7 @@ export default function RequestRidePage() {
     if (!pickupCoords || !dropoffCoords || !estimate) return;
     const balance = Number(user?.wallet?.balance ?? 0);
     if (balance < estimate.totalPrice) {
-      toast(`Insufficient balance. Need M ${estimate.totalPrice.toFixed(2)}`, "error");
-      return;
+      toast(`Need M ${estimate.totalPrice.toFixed(2)} — top up your wallet`, "error"); return;
     }
     setLoading(true);
     try {
@@ -91,20 +83,11 @@ export default function RequestRidePage() {
         dropoffLat: dropoffCoords.lat, dropoffLng: dropoffCoords.lng,
         seats,
       });
-      setActiveTrip(trip);
-      joinTrip(trip.id);
-      setPhase("selecting");
-      // Poll for driver acceptance
+      setActiveTrip(trip); joinTrip(trip.id); setPhase("selecting");
       const interval = setInterval(async () => {
         const { data } = await tripApi.getOne(trip.id);
         setActiveTrip(data);
-        if (data.status !== "REQUESTED") {
-          clearInterval(interval);
-          setPhase("tracking");
-          // Load nearby drivers list
-          const { data: avail } = await tripApi.getAvailable();
-          setDrivers(avail);
-        }
+        if (data.status !== "REQUESTED") { clearInterval(interval); setPhase("tracking"); }
       }, 3000);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Booking failed";
@@ -114,32 +97,23 @@ export default function RequestRidePage() {
 
   async function cancelTrip() {
     if (!activeTrip) return;
-    try {
-      await tripApi.cancel(activeTrip.id);
-      setActiveTrip(null);
-      setPhase("input");
-      toast("Trip cancelled", "info");
-    } catch { toast("Could not cancel trip", "error"); }
+    try { await tripApi.cancel(activeTrip.id); setActiveTrip(null); setPhase("input"); toast("Trip cancelled", "info"); }
+    catch { toast("Could not cancel", "error"); }
   }
 
   async function submitRating() {
     if (!activeTrip) return;
-    try {
-      await tripApi.rate(activeTrip.id, ratingScore, ratingReview);
-      toast("Thanks for your feedback!", "success");
-    } catch { /* optional */ }
-    setActiveTrip(null);
-    refreshUser();
-    navigate("/passenger");
+    try { await tripApi.rate(activeTrip.id, ratingScore, ratingReview); } catch {}
+    setActiveTrip(null); refreshUser(); navigate("/passenger");
   }
 
-  const mapCenter = pickupCoords ?? (coords ? { lat: coords.lat, lng: coords.lng } : { lat: -29.3167, lng: 27.4833 });
+  const mapCenter = pickupCoords ?? (coords ?? { lat: -29.3167, lng: 27.4833 });
 
   return (
     <div className="app-shell">
-      {/* Map fills most of the screen */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-        <Suspense fallback={<div style={{ flex: 1, background: "var(--bg-base)" }} />}>
+      {/* Map fills top portion */}
+      <div style={{ flex: 1, position: "relative", minHeight: 280 }}>
+        <Suspense fallback={<div style={{ flex: 1, background: "var(--bg-surface)", minHeight: 280 }} />}>
           <DispatchMap
             center={mapCenter}
             pickup={pickupCoords ?? undefined}
@@ -147,193 +121,216 @@ export default function RequestRidePage() {
             driverLocation={driverLocation}
             height="100%"
             onMapClick={(latlng) => {
-              if (!pickupCoords) { setPickupCoords(latlng); setPickupAddr(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`); }
-              else if (!dropoffCoords) { setDropoffCoords(latlng); setDropoffAddr(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`); }
+              if (settingPoint === "pickup") {
+                setPickupCoords(latlng);
+                setPickupAddr(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
+                setSettingPoint("dropoff");
+              } else {
+                setDropoffCoords(latlng);
+                setDropoffAddr(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
+              }
             }}
           />
         </Suspense>
 
-        {/* Top overlay buttons */}
-        <div style={{ position: "absolute", top: 16, left: 16, right: 16, zIndex: 999, display: "flex", justifyContent: "space-between" }}>
-          <button className="map-btn" onClick={() => navigate("/passenger")}>
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path d="M19 12H5M12 5l-7 7 7 7" />
-            </svg>
-          </button>
+        {/* Map overlay controls */}
+        <div style={{ position: "absolute", top: 16, left: 16, right: 16, zIndex: 999, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <button className="map-btn" onClick={() => navigate("/passenger")}>{Icons.back}</button>
           {phase === "tracking" && driverLocation && estimate && (
             <MapInfoCard distanceM={Math.round(estimate.distanceKm * 1000)} timeMin={estimate.durationMin} />
           )}
-          <button className="map-btn" onClick={() => setPickupCoords(coords)}>
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-            </svg>
+          <button className="map-btn" onClick={() => { setPickupCoords(coords); setPickupAddr("My Location"); }}>
+            {Icons.destination}
           </button>
         </div>
+
+        {/* Tap hint */}
+        {phase === "input" && (
+          <div style={{
+            position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)",
+            background: "var(--bg-dark)", borderRadius: "var(--r-pill)",
+            padding: "6px 16px", zIndex: 999,
+          }}>
+            <span style={{ fontSize: 12, color: "#fff", fontWeight: 500 }}>
+              Tap map to set {settingPoint === "pickup" ? "pickup" : "drop-off"}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Bottom sheet — changes by phase */}
-      <div style={{ flexShrink: 0, padding: "0 16px 24px", background: "var(--bg-base)" }}>
+      {/* Bottom sheet */}
+      <div style={{ background: "var(--bg-base)", borderRadius: "24px 24px 0 0", flexShrink: 0, marginTop: -20 }}>
+        <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "12px auto 0" }} />
 
-        {/* ── Input phase ── */}
-        {phase === "input" && (
-          <div className="page-enter flex-col gap-3" style={{ paddingTop: 16 }}>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 2 }}>
-              Tap the map to set pickup, then drop-off
-            </p>
-            <div className="input-wrap">
-              <label className="input-label">Pickup</label>
-              <input className="input" value={pickupAddr}
-                onChange={(e) => setPickupAddr(e.target.value)} placeholder="Tap map or type address" />
-            </div>
-            <div className="input-wrap">
-              <label className="input-label">Drop-off</label>
-              <input className="input" value={dropoffAddr}
-                onChange={(e) => setDropoffAddr(e.target.value)} placeholder="Where to?" />
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="input-label" style={{ whiteSpace: "nowrap" }}>Seats</label>
-              {[1, 2, 3, 4].map((n) => (
-                <button key={n} onClick={() => setSeats(n)} style={{
-                  width: 36, height: 36, borderRadius: "var(--r-sm)",
-                  background: seats === n ? "var(--purple)" : "var(--bg-elevated)",
-                  border: `1px solid ${seats === n ? "var(--purple)" : "var(--border)"}`,
-                  color: seats === n ? "#fff" : "var(--text-secondary)",
-                  cursor: "pointer", fontWeight: 700, fontFamily: "var(--font-display)",
-                }}>
-                  {n}
-                </button>
-              ))}
-            </div>
-            <button
-              className="btn btn-primary"
-              onClick={getEstimate}
-              disabled={loading || !pickupCoords || !dropoffCoords}
-            >
-              {loading ? <span className="spinner" style={{ width: 20, height: 20 }} /> : "Get Price"}
-            </button>
-          </div>
-        )}
+        <div className="px-5" style={{ paddingBottom: 28, paddingTop: 16 }}>
 
-        {/* ── Estimate phase ── */}
-        {phase === "estimate" && estimate && (
-          <div className="page-enter flex-col gap-3" style={{ paddingTop: 16 }}>
-            <LocationCard
-              pickup={pickupAddr} dropoff={dropoffAddr}
-              distanceKm={estimate.distanceKm} durationMin={estimate.durationMin}
-            />
-            {/* Price breakdown */}
-            <div className="card" style={{ padding: "14px 18px" }}>
-              <div className="flex justify-between text-sm" style={{ marginBottom: 6 }}>
-                <span className="text-muted">Base fare</span>
-                <span>M {estimate.baseFare.toFixed(2)}</span>
+          {/* ── Input phase ── */}
+          {phase === "input" && (
+            <div className="flex-col gap-4 page-enter">
+              {/* From/To input group */}
+              <div className="input-group">
+                <div className="input-row">
+                  <div className="input-dot-from" />
+                  <input value={pickupAddr} onChange={e => setPickupAddr(e.target.value)}
+                    placeholder="Pickup location" />
+                  <button className="input-swap" onClick={() => {
+                    const tmp = pickupCoords; setPickupCoords(dropoffCoords); setDropoffCoords(tmp);
+                    const ta = pickupAddr; setPickupAddr(dropoffAddr); setDropoffAddr(ta);
+                  }}>{Icons.swap}</button>
+                </div>
+                <div className="input-row">
+                  <div className="input-dot-to" />
+                  <input value={dropoffAddr} onChange={e => setDropoffAddr(e.target.value)}
+                    placeholder="Where to?" />
+                </div>
               </div>
-              <div className="flex justify-between text-sm" style={{ marginBottom: 6 }}>
-                <span className="text-muted">Distance ({estimate.distanceKm.toFixed(1)} km)</span>
-                <span>M {estimate.distanceCharge.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm" style={{ marginBottom: 8 }}>
-                <span className="text-muted">Time (~{Math.round(estimate.durationMin)} min)</span>
-                <span>M {estimate.timeCharge.toFixed(2)}</span>
-              </div>
-              <div className="divider" />
-              <div className="flex justify-between">
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Total</span>
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 20, color: "var(--teal)" }}>
-                  M {estimate.totalPrice.toFixed(2)}
-                </span>
-              </div>
-            </div>
-            <button className="btn btn-primary" onClick={bookRide} disabled={loading}>
-              {loading ? <span className="spinner" style={{ width: 20, height: 20 }} /> : "Book a Ride"}
-            </button>
-            <button className="btn btn-ghost" onClick={() => { setPhase("input"); setEstimate(null); }}>
-              Back
-            </button>
-          </div>
-        )}
 
-        {/* ── Selecting driver phase ── */}
-        {phase === "selecting" && (
-          <div className="page-enter flex-col gap-3" style={{ paddingTop: 16 }}>
-            <div className="flex items-center gap-3">
-              <span className="spinner" />
-              <div>
-                <div style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Finding you a driver</div>
-                <div className="text-sm text-muted">Nearby drivers are being notified…</div>
-              </div>
-            </div>
-            {activeTrip && (
-              <LocationCard pickup={activeTrip.pickupAddress} dropoff={activeTrip.dropoffAddress}
-                distanceKm={activeTrip.distanceKm} durationMin={activeTrip.durationMin} />
-            )}
-            <button className="btn btn-ghost" onClick={cancelTrip} style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
-              Cancel Trip
-            </button>
-          </div>
-        )}
-
-        {/* ── Tracking phase ── */}
-        {phase === "tracking" && activeTrip && (
-          <div className="page-enter flex-col gap-3" style={{ paddingTop: 16 }}>
-            {activeTrip.driver && (
-              <DriverCard
-                fullName={activeTrip.driver.fullName}
-                rating={activeTrip.driver.rating}
-                vehicleModel={activeTrip.driver.driverProfile?.vehicleModel}
-                vehiclePlate={activeTrip.driver.driverProfile?.vehiclePlate}
-                avatarUrl={activeTrip.driver.avatarUrl}
-                status={
-                  activeTrip.status === "DRIVER_ASSIGNED" ? "Driver on the way" :
-                  activeTrip.status === "DRIVER_ARRIVED" ? "Driver has arrived! 🎉" :
-                  activeTrip.status === "IN_PROGRESS" ? "Trip in progress 🚕" : ""
-                }
-              />
-            )}
-            <LocationCard pickup={activeTrip.pickupAddress} dropoff={activeTrip.dropoffAddress}
-              distanceKm={activeTrip.distanceKm} durationMin={activeTrip.durationMin} />
-            {activeTrip.status !== "IN_PROGRESS" && (
-              <button className="btn btn-ghost" onClick={cancelTrip}
-                style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
-                Cancel Trip
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* ── Rating phase ── */}
-        {phase === "rating" && activeTrip && (
-          <div className="page-enter flex-col gap-4" style={{ paddingTop: 16 }}>
-            <div className="text-center">
-              <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
-              <h3 style={{ fontFamily: "var(--font-display)" }}>Trip Complete!</h3>
-              <p className="text-muted text-sm" style={{ marginTop: 4 }}>
-                You paid <strong style={{ color: "var(--teal)" }}>M {Number(activeTrip.totalPrice).toFixed(2)}</strong>
-              </p>
-            </div>
-            {activeTrip.driver && (
-              <div style={{ textAlign: "center" }}>
-                <p className="text-sm text-muted" style={{ marginBottom: 8 }}>Rate your driver</p>
-                <div className="flex justify-center gap-2">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <button key={s} onClick={() => setRatingScore(s)} style={{
-                      fontSize: 32, background: "none", border: "none", cursor: "pointer",
-                      filter: s <= ratingScore ? "none" : "grayscale(1) opacity(0.4)",
-                    }}>⭐</button>
+              {/* Seats */}
+              <div className="flex items-center gap-3">
+                <span style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 500, flexShrink: 0 }}>Seats</span>
+                <div className="flex gap-2">
+                  {[1,2,3,4].map(n => (
+                    <button key={n} onClick={() => setSeats(n)} style={{
+                      width: 36, height: 36, borderRadius: "var(--r-md)",
+                      background: seats === n ? "var(--orange)" : "var(--bg-white)",
+                      border: `1.5px solid ${seats === n ? "var(--orange)" : "var(--border)"}`,
+                      color: seats === n ? "#fff" : "var(--text-secondary)",
+                      cursor: "pointer", fontWeight: 700, fontFamily: "var(--font)", fontSize: 14,
+                      boxShadow: "var(--shadow-sm)",
+                    }}>{n}</button>
                   ))}
                 </div>
               </div>
-            )}
-            <div className="input-wrap">
-              <label className="input-label">Review (optional)</label>
-              <input className="input" value={ratingReview}
-                onChange={(e) => setRatingReview(e.target.value)} placeholder="Great driver!" />
+
+              <button className="btn btn-primary" onClick={getEstimate}
+                disabled={loading || !pickupCoords || !dropoffCoords}>
+                {loading ? <span className="spinner spinner-dark" style={{ width: 20, height: 20 }} /> : "Get Price"}
+              </button>
             </div>
-            <button className="btn btn-primary" onClick={submitRating}>Done</button>
-            <button className="btn btn-ghost" onClick={() => { setActiveTrip(null); navigate("/passenger"); }}>
-              Skip
-            </button>
-          </div>
-        )}
+          )}
+
+          {/* ── Estimate phase ── */}
+          {phase === "estimate" && estimate && (
+            <div className="flex-col gap-4 page-enter">
+              <LocationCard pickup={pickupAddr} dropoff={dropoffAddr}
+                distanceKm={estimate.distanceKm} durationMin={estimate.durationMin} />
+
+              {/* Price breakdown card */}
+              <div className="card" style={{ padding: "16px 20px" }}>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>Price Breakdown</div>
+                {[
+                  { label: "Base fare", value: estimate.baseFare },
+                  { label: `Distance (${estimate.distanceKm.toFixed(1)} km)`, value: estimate.distanceCharge },
+                  { label: `Time (~${Math.round(estimate.durationMin)} min)`, value: estimate.timeCharge },
+                ].map(row => (
+                  <div key={row.label} className="flex justify-between" style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{row.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500 }}>M {row.value.toFixed(2)}</span>
+                  </div>
+                ))}
+                <div style={{ height: 1, background: "var(--border-light)", margin: "10px 0" }} />
+                <div className="flex justify-between items-center">
+                  <span style={{ fontWeight: 700 }}>Total</span>
+                  <span style={{ fontWeight: 800, fontSize: 22, color: "var(--orange)" }}>
+                    M {estimate.totalPrice.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <button className="btn btn-primary" onClick={bookRide} disabled={loading}>
+                {loading ? <span className="spinner spinner-dark" style={{ width: 20, height: 20 }} /> : "Book a Ride"}
+              </button>
+              <button className="btn btn-outline" onClick={() => { setPhase("input"); setEstimate(null); }}>Back</button>
+            </div>
+          )}
+
+          {/* ── Selecting driver ── */}
+          {phase === "selecting" && (
+            <div className="flex-col gap-4 page-enter">
+              <div className="flex items-center gap-3">
+                <span className="spinner" />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>Finding your driver</div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Nearby drivers are being notified</div>
+                </div>
+              </div>
+              {activeTrip && <LocationCard pickup={activeTrip.pickupAddress} dropoff={activeTrip.dropoffAddress}
+                distanceKm={activeTrip.distanceKm} durationMin={activeTrip.durationMin} />}
+              <button className="btn btn-outline" onClick={cancelTrip}
+                style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>Cancel Trip</button>
+            </div>
+          )}
+
+          {/* ── Tracking ── */}
+          {phase === "tracking" && activeTrip && (
+            <div className="flex-col gap-3 page-enter">
+              {activeTrip.driver && (
+                <DriverCard
+                  fullName={activeTrip.driver.fullName} rating={activeTrip.driver.rating}
+                  vehicleModel={activeTrip.driver.driverProfile?.vehicleModel}
+                  vehiclePlate={activeTrip.driver.driverProfile?.vehiclePlate}
+                  avatarUrl={activeTrip.driver.avatarUrl}
+                  status={
+                    activeTrip.status === "DRIVER_ASSIGNED" ? "Driver on the way" :
+                    activeTrip.status === "DRIVER_ARRIVED" ? "Driver has arrived" :
+                    activeTrip.status === "IN_PROGRESS" ? "Trip in progress" : ""
+                  }
+                />
+              )}
+              <LocationCard pickup={activeTrip.pickupAddress} dropoff={activeTrip.dropoffAddress}
+                distanceKm={activeTrip.distanceKm} durationMin={activeTrip.durationMin} />
+              {activeTrip.status !== "IN_PROGRESS" && (
+                <button className="btn btn-outline" onClick={cancelTrip}
+                  style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>Cancel Trip</button>
+              )}
+            </div>
+          )}
+
+          {/* ── Rating ── */}
+          {phase === "rating" && activeTrip && (
+            <div className="flex-col gap-4 page-enter text-center items-center">
+              <div style={{
+                width: 64, height: 64, borderRadius: "50%",
+                background: "rgba(34,197,94,0.12)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "var(--success)", margin: "8px auto",
+              }}>
+                {Icons.check}
+              </div>
+              <div>
+                <h3 style={{ marginBottom: 4 }}>Trip Complete!</h3>
+                <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+                  You paid <strong style={{ color: "var(--orange)" }}>M {Number(activeTrip.totalPrice).toFixed(2)}</strong>
+                </p>
+              </div>
+              {activeTrip.driver && (
+                <div style={{ width: "100%" }}>
+                  <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 10 }}>Rate your driver</p>
+                  <div className="flex justify-center gap-3">
+                    {[1,2,3,4,5].map(s => (
+                      <button key={s} onClick={() => setRatingScore(s)} style={{
+                        width: 40, height: 40, borderRadius: "50%", border: "none", cursor: "pointer",
+                        background: s <= ratingScore ? "var(--orange)" : "var(--bg-input)",
+                        color: s <= ratingScore ? "#fff" : "var(--text-muted)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        transition: "var(--t)",
+                      }}>
+                        {Icons.star}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="input-wrap w-full">
+                <input className="input" value={ratingReview}
+                  onChange={e => setRatingReview(e.target.value)}
+                  placeholder="Leave a review (optional)" />
+              </div>
+              <button className="btn btn-primary w-full" onClick={submitRating}>Submit & Done</button>
+              <button className="btn btn-ghost" onClick={() => { setActiveTrip(null); navigate("/passenger"); }}>Skip</button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

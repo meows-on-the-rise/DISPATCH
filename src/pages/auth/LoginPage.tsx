@@ -69,7 +69,6 @@ export default function LoginPage() {
                 position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
                 background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)",
               }}>
-                {showPw ? Icons.eyeOff : Icons.eye}
               </button>
             </div>
           </div>
