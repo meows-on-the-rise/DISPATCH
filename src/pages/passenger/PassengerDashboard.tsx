@@ -73,8 +73,8 @@ export default function PassengerDashboard() {
 
         {/* CTA */}
         <button className="btn btn-primary" onClick={() => navigate("/passenger/request")}
-          disabled={balance <= 0} style={{ marginBottom: 12 }}>
-          {balance <= 0 ? "Top up wallet to request a ride" : "Request a Ride"}
+          style={{ marginBottom: 12 }}>
+          Request a Ride
         </button>
         {balance <= 0 && (
           <button className="btn btn-outline" onClick={() => navigate("/passenger/wallet")}>
