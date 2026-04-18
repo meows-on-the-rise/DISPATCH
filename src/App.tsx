@@ -29,6 +29,7 @@ import AdminPanel from "./pages/admin/AdminPanel";
 import UsersFormPage from "./pages/admin/UsersFormPage";
 import TripsFormPage from "./pages/admin/TripsFormPage";
 import ReportsPage from "./pages/admin/ReportsPage";
+import AdminVerifyPage from "./pages/admin/AdminVerifyPage";
 
 // ── Auth guards ───────────────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ function RedirectIfAuthed() {
   const { user } = useAuthStore();
   if (!user) return <UserSelectPage />;
   if (user.role === "DRIVER") return <Navigate to="/driver" replace />;
-  if (user.role === "ADMIN") return <Navigate to="/admin" replace />;
+  if (user.role === "ADMIN") return <Navigate to="/admin/verify" replace />;
   return <Navigate to="/passenger" replace />;
 }
 
@@ -81,6 +82,9 @@ export default function App() {
 
           {/* Admin — main panel */}
           <Route path="/admin" element={<RequireAuth role="ADMIN"><AdminPanel /></RequireAuth>} />
+          
+          {/* Admin — verify */}
+          <Route path="/admin/verify" element={<AdminVerifyPage />} />
 
           {/* Admin — forms */}
           <Route path="/admin/users"   element={<RequireAuth role="ADMIN"><UsersFormPage /></RequireAuth>} />
