@@ -4,9 +4,6 @@ import { authenticate, requireRole } from "../middleware/auth.js";
 
 const router = Router();
 
-router.use(authenticate);
-router.use(requireRole("ADMIN"));
-
 // ── REPORT 1: Trip Summary Report ─────────────────────────────────────────────
 // Joins: Trip + User (passenger) + User (driver)
 // Shows every trip with both parties, fare breakdown, and status
