@@ -31,7 +31,7 @@ import TripsFormPage from "./pages/admin/TripsFormPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import AdminVerifyPage from "./pages/admin/AdminVerifyPage";
 
-import { useEffect } from "react";
+
 import LoadingScreen from './components/LoadingScreen';
 
 // ── Auth guards ───────────────────────────────────────────────────────────────
