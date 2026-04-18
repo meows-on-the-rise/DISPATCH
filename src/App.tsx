@@ -26,6 +26,9 @@ import DriverStatsPage from "./pages/driver/DriverStatsPage";
 
 // Admin
 import AdminPanel from "./pages/admin/AdminPanel";
+import UsersFormPage from "./pages/admin/UsersFormPage";
+import TripsFormPage from "./pages/admin/TripsFormPage";
+import ReportsPage from "./pages/admin/ReportsPage";
 
 // ── Auth guards ───────────────────────────────────────────────────────────────
 
@@ -76,8 +79,15 @@ export default function App() {
           <Route path="/driver/activity" element={<RequireAuth role="DRIVER"><ActivityPage /></RequireAuth>} />
           <Route path="/driver/profile" element={<RequireAuth role="DRIVER"><ProfilePage /></RequireAuth>} />
 
-          {/* Admin */}
+          {/* Admin — main panel */}
           <Route path="/admin" element={<RequireAuth role="ADMIN"><AdminPanel /></RequireAuth>} />
+
+          {/* Admin — forms */}
+          <Route path="/admin/users"   element={<RequireAuth role="ADMIN"><UsersFormPage /></RequireAuth>} />
+          <Route path="/admin/trips"   element={<RequireAuth role="ADMIN"><TripsFormPage /></RequireAuth>} />
+
+          {/* Admin — reports */}
+          <Route path="/admin/reports" element={<RequireAuth role="ADMIN"><ReportsPage /></RequireAuth>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
