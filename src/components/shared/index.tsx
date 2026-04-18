@@ -134,10 +134,18 @@ export const Icons = {
     </svg>
   ),
   dispatch: (
-    <svg width="28" height="28" fill="none" viewBox="0 0 32 32">
-      <circle cx="16" cy="16" r="16" fill="white" fillOpacity="0.15"/>
-      <path d="M10 24 L16 8 L22 24" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      <path d="M12 19 L20 19" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
+    <svg viewBox="0 0 680 680" width="80" height="80" xmlns="http://www.w3.org/2000/svg">
+      <rect x="140" y="140" width="400" height="400" rx="90" fill="#0d4f5c"/>
+      <circle cx="340" cy="340" r="130" fill="#0a3d48"/>
+      <rect x="220" y="330" width="240" height="80" rx="14" fill="#f97316"/>
+      <path d="M270 330 Q285 280 340 270 Q395 280 410 330 Z" fill="#f97316"/>
+      <path d="M285 330 Q295 292 340 284 Q385 292 395 330 Z" fill="#0a3d48" opacity="0.5"/>
+      <circle cx="275" cy="415" r="32" fill="#0a3d48"/>
+      <circle cx="275" cy="415" r="18" fill="#1a6b7a"/>
+      <circle cx="405" cy="415" r="32" fill="#0a3d48"/>
+      <circle cx="405" cy="415" r="18" fill="#1a6b7a"/>
+      <rect x="452" y="348" width="18" height="12" rx="4" fill="#fff" opacity="0.8"/>
+      <rect x="210" y="348" width="18" height="12" rx="4" fill="#ff6b00" opacity="0.9"/>
     </svg>
   ),
 };

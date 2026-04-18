@@ -27,7 +27,6 @@ export default function DriverDashboard() {
     }
     try {
       await driverApi.toggleClock(); await refreshUser();
-      toast(val ? "You're online!" : "Clocked out", val ? "success" : "info");
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Failed";
       toast(msg, "error");

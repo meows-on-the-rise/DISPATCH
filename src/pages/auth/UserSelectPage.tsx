@@ -12,9 +12,9 @@ export default function UserSelectPage() {
         alignItems: "center", justifyContent: "center",
         padding: "48px 32px 32px",
       }}>
-        <div className="logo-pulse" style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 32 }}>
           <div style={{
-            width: 80, height: 80, borderRadius: "50%",
+            width: 100, height: 100, borderRadius: "50%",
             background: "rgba(255,255,255,0.1)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
