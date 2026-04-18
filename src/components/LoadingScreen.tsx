@@ -1,4 +1,4 @@
-import dispatchLogo from '../public/apple-touch-icon.png';
+const dispatchLogo = '/apple-touch-icon.png';
 
 const LoadingScreen = () => {
   return (
