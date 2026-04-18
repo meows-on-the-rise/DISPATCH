@@ -31,6 +31,9 @@ import TripsFormPage from "./pages/admin/TripsFormPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import AdminVerifyPage from "./pages/admin/AdminVerifyPage";
 
+import { useEffect } from "react";
+import LoadingScreen from './components/LoadingScreen';
+
 // ── Auth guards ───────────────────────────────────────────────────────────────
 
 function RequireAuth({ children, role }: { children: React.ReactNode; role?: string }) {
@@ -51,7 +54,11 @@ function RedirectIfAuthed() {
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const { isLoading } = useAuthStore();
+ const { isLoading, hydrate } = useAuthStore();
+
+  useEffect(() => {
+    hydrate();
+  }, []);
 
   if (isLoading) return <LoadingScreen />;
 
