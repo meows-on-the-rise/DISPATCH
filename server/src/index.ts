@@ -12,6 +12,7 @@ import walletRoutes from "./routes/wallet.js";
 import tripRoutes from "./routes/trips.js";
 import driverRoutes from "./routes/drivers.js";
 import adminRoutes from "./routes/admin.js";
+import reportRoutes from "./routes/reports.js";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -58,6 +59,7 @@ app.use("/wallet", walletRoutes);
 app.use("/trips", tripRoutes);
 app.use("/drivers", driverRoutes);
 app.use("/admin", adminRoutes);
+app.use("/admin/reports", reportRoutes);
 
 // ── 404 & Error handlers ──────────────────────────────────────────────────────
 
