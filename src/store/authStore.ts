@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       refreshToken: null,
-      isLoading: false,
+      isLoading: true,
 
       setAuth: (user, accessToken, refreshToken) => {
         localStorage.setItem("accessToken", accessToken);
