@@ -2,6 +2,11 @@ import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import { adminApi } from "../../api/client";
 import { Icons, PageHeader } from "../../components/shared";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import {
+  TripSummaryPDF, DriverEarningsPDF,
+  PassengerActivityPDF, PlatformRevenuePDF,
+} from "./ReportPDF";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
