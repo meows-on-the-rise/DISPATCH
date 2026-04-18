@@ -30,12 +30,27 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isLoading: boolean;
-
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   setUser: (user: User) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  hydrate: () => Promise<void>; 
 }
+
+hydrate: async () => {
+  set({ isLoading: true });
+  try {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      const { data } = await authApi.me();
+      set({ user: data });
+    }
+  } catch {
+    get().logout();
+  } finally {
+    set({ isLoading: false });
+  }
+},
 
 export const useAuthStore = create<AuthState>()(
   persist(
