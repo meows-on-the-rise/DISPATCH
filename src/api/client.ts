@@ -142,6 +142,8 @@ export const adminApi = {
     api.get("/admin/trips", { params: { search, status } }),
   cancelTrip: (id: string, reason: string) =>
     api.patch(`/admin/trips/${id}`, { status: "CANCELLED", cancelReason: reason }),
+  updateTrip: (id: string, body: object) => 
+    api.patch(`/admin/trips/${id}`, body),
 
   // Stats
   getStats: () => api.get("/admin/stats"),
