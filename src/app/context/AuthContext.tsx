@@ -18,17 +18,13 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
+  isLoading: boolean;
   login: (username: string, password: string, userType: 'driver' | 'passenger') => boolean;
   register: (userData: Omit<User, 'id' | 'rating' | 'dispatchCash'> & { password: string }) => boolean;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
   resetPassword: (identifier: string) => boolean;
-
-  interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
 }
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
