@@ -150,11 +150,11 @@ export const adminApi = {
 
   // Reports
   getReportTripSummary:      (params?: { from?: string; to?: string; status?: string }) =>
-    api.get("/reports/trip-summary", { params }),
-  getReportDriverEarnings:   () => api.get("/reports/driver-earnings"),
-  getReportPassengerActivity:() => api.get("/reports/passenger-activity"),
+    api.get("/admin/reports/trip-summary", { params }),
+  getReportDriverEarnings:   () => api.get("/admin/reports/driver-earnings"),
+  getReportPassengerActivity:() => api.get("/admin/reports/passenger-activity"),
   getReportPlatformRevenue:  (days = 30) =>
-    api.get("/reports/platform-revenue", { params: { days } }),
+    api.get("/admin/reports/platform-revenue", { params: { days } }),
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
