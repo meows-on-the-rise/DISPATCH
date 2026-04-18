@@ -32,8 +32,6 @@ import ReportsPage from "./pages/admin/ReportsPage";
 import AdminVerifyPage from "./pages/admin/AdminVerifyPage";
 
 import { initializeDemoData } from './app/utils/initializeDemo';
-import { useAuth } from './app/context/AuthContext';
-import LoadingScreen from './components/LoadingScreen';
 
 
 // ── Auth guards ───────────────────────────────────────────────────────────────
@@ -56,9 +54,6 @@ function RedirectIfAuthed() {
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
-   const { isLoading } = useAuth();
-
-  if (isLoading) return <LoadingScreen />;
   useEffect(() => {
     initializeDemoData();
   }, []);
