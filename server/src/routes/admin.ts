@@ -192,20 +192,39 @@ router.get("/trips", async (req: AuthRequest, res: Response) => {
 // Admin can cancel a trip or override status
 
 router.patch("/trips/:id", async (req: AuthRequest, res: Response) => {
-  const { status, cancelReason } = req.body;
-  const allowed = ["CANCELLED"];
-  if (!allowed.includes(status)) {
-    res.status(400).json({ error: "Admin may only cancel trips" });
+  const { status, cancelReason, pickupAddress, dropoffAddress, seats } = req.body;
+
+  // If it's a cancel action
+  if (status === "CANCELLED") {
+    const trip = await prisma.trip.update({
+      where: { id: req.params.id },
+      data: {
+        status,
+        cancelledBy:  req.user!.id,
+        cancelReason: cancelReason ?? "Cancelled by admin",
+        cancelledAt:  new Date(),
+      },
+    });
+    res.json(trip);
     return;
   }
+
+  // General edit
+  const allowed = ["REQUESTED", "DRIVER_ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
+  if (status && !allowed.includes(status)) {
+    res.status(400).json({ error: "Invalid status" });
+    return;
+  }
+
+  const data: any = {};
+  if (pickupAddress)  data.pickupAddress  = pickupAddress;
+  if (dropoffAddress) data.dropoffAddress = dropoffAddress;
+  if (seats)          data.seats          = Number(seats);
+  if (status)         data.status         = status;
+
   const trip = await prisma.trip.update({
     where: { id: req.params.id },
-    data: {
-      status,
-      cancelledBy:  req.user!.id,
-      cancelReason: cancelReason ?? "Cancelled by admin",
-      cancelledAt:  new Date(),
-    },
+    data,
   });
   res.json(trip);
 });
