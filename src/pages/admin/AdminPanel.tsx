@@ -35,6 +35,31 @@ export default function AdminPanel() {
     } catch { toast("Action failed", "error"); }
   }
 
+  // Admin nav shortcuts
+  const shortcuts = [
+    {
+      icon: Icons.user,
+      label: "Users",
+      sublabel: stats ? `${stats.passengers + stats.drivers} total` : "Manage",
+      color: "var(--teal)",
+      path: "/admin/users",
+    },
+    {
+      icon: Icons.car,
+      label: "Trips",
+      sublabel: stats ? `${stats.totalTrips} total` : "Manage",
+      color: "var(--orange)",
+      path: "/admin/trips",
+    },
+    {
+      icon: Icons.document,
+      label: "Reports",
+      sublabel: "4 report types",
+      color: "var(--success)",
+      path: "/admin/reports",
+    },
+  ];
+
   return (
     <div className="app-shell">
       <div className="header-dark" style={{ paddingTop: 48, paddingBottom: 24 }}>
@@ -51,6 +76,27 @@ export default function AdminPanel() {
             {Icons.logout} Sign out
           </button>
         </div>
+
+        {/* Quick access shortcuts */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+          {shortcuts.map(({ icon, label, sublabel, color, path }) => (
+            <button
+              key={label}
+              onClick={() => navigate(path)}
+              style={{
+                background: "rgba(255,255,255,0.1)", border: "1.5px solid rgba(255,255,255,0.15)",
+                borderRadius: "var(--r-lg)", padding: "14px 10px",
+                cursor: "pointer", fontFamily: "var(--font)", textAlign: "center",
+                color: "#fff", transition: "var(--t)",
+              }}
+            >
+              <div style={{ color, display: "flex", justifyContent: "center", marginBottom: 6 }}>{icon}</div>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{label}</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>{sublabel}</div>
+            </button>
+          ))}
+        </div>
+
         <div className="tab-switch">
           {(["docs", "stats"] as const).map(t => (
             <button key={t} className={`tab-switch-item ${tab === t ? "active" : ""}`}
@@ -86,7 +132,6 @@ export default function AdminPanel() {
                   <span className="badge badge-orange">{doc.docType}</span>
                 </div>
 
-                {/* Document preview */}
                 <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" style={{
                   display: "block", height: 120, borderRadius: "var(--r-md)",
                   background: "var(--bg-input)", overflow: "hidden", marginBottom: 14,
@@ -121,10 +166,10 @@ export default function AdminPanel() {
           <div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               {[
-                { icon: Icons.user,     label: "Passengers",      value: stats.passengers,      color: "var(--teal)" },
-                { icon: Icons.car,      label: "Drivers",          value: stats.drivers,          color: "var(--orange)" },
-                { icon: Icons.activity, label: "Total Trips",      value: stats.totalTrips,       color: "var(--teal-mid)" },
-                { icon: Icons.check,    label: "Completed",        value: stats.completedTrips,   color: "var(--success)" },
+                { icon: Icons.user,     label: "Passengers",    value: stats.passengers,     color: "var(--teal)" },
+                { icon: Icons.car,      label: "Drivers",        value: stats.drivers,        color: "var(--orange)" },
+                { icon: Icons.activity, label: "Total Trips",    value: stats.totalTrips,     color: "var(--teal-mid)" },
+                { icon: Icons.check,    label: "Completed",      value: stats.completedTrips, color: "var(--success)" },
               ].map(({ icon, label, value, color }) => (
                 <div key={label} className="card" style={{ padding: "18px 16px", textAlign: "center" }}>
                   <div style={{
