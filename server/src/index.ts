@@ -58,8 +58,9 @@ app.use("/users", userRoutes);
 app.use("/wallet", walletRoutes);
 app.use("/trips", tripRoutes);
 app.use("/drivers", driverRoutes);
-app.use("/admin", adminRoutes);
 app.use("/admin/reports", reportRoutes);
+app.use("/admin", adminRoutes);
+
 
 // ── 404 & Error handlers ──────────────────────────────────────────────────────
 
