@@ -26,6 +26,10 @@ import DriverStatsPage from "./pages/driver/DriverStatsPage";
 
 // Admin
 import AdminPanel from "./pages/admin/AdminPanel";
+import UsersFormPage from "./pages/admin/UsersFormPage";
+import TripsFormPage from "./pages/admin/TripsFormPage";
+import ReportsPage from "./pages/admin/ReportsPage";
+import AdminVerifyPage from "./pages/admin/AdminVerifyPage";
 
 // ── Auth guards ───────────────────────────────────────────────────────────────
 
@@ -40,7 +44,7 @@ function RedirectIfAuthed() {
   const { user } = useAuthStore();
   if (!user) return <UserSelectPage />;
   if (user.role === "DRIVER") return <Navigate to="/driver" replace />;
-  if (user.role === "ADMIN") return <Navigate to="/admin" replace />;
+  if (user.role === "ADMIN") return <Navigate to="/admin/verify" replace />;
   return <Navigate to="/passenger" replace />;
 }
 
@@ -76,8 +80,18 @@ export default function App() {
           <Route path="/driver/activity" element={<RequireAuth role="DRIVER"><ActivityPage /></RequireAuth>} />
           <Route path="/driver/profile" element={<RequireAuth role="DRIVER"><ProfilePage /></RequireAuth>} />
 
-          {/* Admin */}
+          {/* Admin — main panel */}
           <Route path="/admin" element={<RequireAuth role="ADMIN"><AdminPanel /></RequireAuth>} />
+          
+          {/* Admin — verify */}
+          <Route path="/admin/verify" element={<AdminVerifyPage />} />
+
+          {/* Admin — forms */}
+          <Route path="/admin/users"   element={<RequireAuth role="ADMIN"><UsersFormPage /></RequireAuth>} />
+          <Route path="/admin/trips"   element={<RequireAuth role="ADMIN"><TripsFormPage /></RequireAuth>} />
+
+          {/* Admin — reports */}
+          <Route path="/admin/reports" element={<RequireAuth role="ADMIN"><ReportsPage /></RequireAuth>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

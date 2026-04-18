@@ -21,19 +21,37 @@ export default function RegisterPage() {
     setForm(f => ({ ...f, [k]: e.target.value }));
 
   async function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
-    if (form.password !== form.confirmPassword) { toast("Passwords don't match", "error"); return; }
-    setLoading(true);
-    try {
-      const { data } = await authApi.register({ ...form, role });
-      setAuth(data.user, data.accessToken, data.refreshToken);
-      toast(`Welcome, ${data.user.fullName}!`, "success");
-      navigate(role === "DRIVER" ? "/driver" : "/passenger");
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Registration failed";
-      toast(msg, "error");
-    } finally { setLoading(false); }
+  e.preventDefault();
+
+  // Password
+  if (form.password.length < 8) {
+    toast("Password must be at least 8 characters", "error"); return;
   }
+
+  // Passwords match
+  if (form.password !== form.confirmPassword) {
+    toast("Passwords don't match", "error"); return;
+  }
+
+  // ID validation — detect if passport or national ID
+  const isPassport = /^[A-Z]{2}\d{6}$/.test(form.idNumber);
+  const isNationalId = /^\d{12}$/.test(form.idNumber);
+
+  if (!isPassport && !isNationalId) {
+    toast("ID must be 12 digits (National ID) or 2 capital letters + 6 digits (Passport)", "error"); return;
+  }
+
+  setLoading(true);
+  try {
+    const { data } = await authApi.register({ ...form, role });
+    setAuth(data.user, data.accessToken, data.refreshToken);
+    toast(`Welcome, ${data.user.fullName}!`, "success");
+    navigate(role === "DRIVER" ? "/driver" : "/passenger");
+  } catch (err: unknown) {
+    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Registration failed";
+    toast(msg, "error");
+  } finally { setLoading(false); }
+}
 
   const fields: Array<{ key: keyof typeof form; label: string; type?: string; placeholder: string; icon: React.ReactNode }> = [
     { key: "fullName",        label: "Full Name",        placeholder: "Thabo Mokoena",     icon: Icons.user },
