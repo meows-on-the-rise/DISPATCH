@@ -34,23 +34,8 @@ interface AuthState {
   setUser: (user: User) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
-  hydrate: () => Promise<void>; 
+  hydrate: () => Promise<void>;
 }
-
-hydrate: async () => {
-  set({ isLoading: true });
-  try {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      const { data } = await authApi.me();
-      set({ user: data });
-    }
-  } catch {
-    get().logout();
-  } finally {
-    set({ isLoading: false });
-  }
-},
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -82,6 +67,21 @@ export const useAuthStore = create<AuthState>()(
           set({ user: data });
         } catch {
           get().logout();
+        }
+      },
+
+      hydrate: async () => {
+        set({ isLoading: true });
+        try {
+          const token = localStorage.getItem("accessToken");
+          if (token) {
+            const { data } = await authApi.me();
+            set({ user: data });
+          }
+        } catch {
+          get().logout();
+        } finally {
+          set({ isLoading: false });
         }
       },
     }),
