@@ -81,7 +81,7 @@ export const userApi = {
   uploadAvatar:  (file: File) => {
     const fd = new FormData();
     fd.append("avatar", file);
-    return api.post("/users/avatar", fd, { headers: { "Content-Type": "multipart/form-data" } });
+    return api.post("/users/avatar", fd );
   },
   getReviews: (userId: string) => api.get(`/users/${userId}/reviews`),
   getStats:   () => api.get("/users/stats"),
