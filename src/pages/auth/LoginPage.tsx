@@ -16,25 +16,31 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    if (!identifier || !password) return;
-    setLoading(true);
-    try {
-      const { data } = await authApi.login(identifier, password);
-      setAuth(data.user, data.accessToken, data.refreshToken);
-      const userRole = data.user.role;
-     if (userRole === "ADMIN") {
-  navigate("/admin/verify", { state: { from: role } });
-} else {
-  navigate(userRole === "DRIVER" ? "/driver" : "/passenger");
-}
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Login failed";
-      toast(msg, "error");
-    } finally { setLoading(false); }
-  }
+ async function handleLogin(e: React.FormEvent) {
+  e.preventDefault();
+  if (!identifier || !password) return;
+  setLoading(true);
+  try {
+    const { data } = await authApi.login(identifier, password);
+    setAuth(data.user, data.accessToken, data.refreshToken);
+    const userRole = data.user.role;
 
+    if (userRole === "ADMIN") {
+      navigate("/admin/verify", { state: { from: role } });
+    } else if (userRole === "PASSENGER" && role === "DRIVER") {
+      toast("This account is not a driver account", "error");
+      return;
+    } else if (userRole === "DRIVER" && role === "PASSENGER") {
+      toast("This account is not a passenger account", "error");
+      return;
+    } else {
+      navigate(role === "DRIVER" ? "/driver" : "/passenger");
+    }
+  } catch (err: unknown) {
+    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Login failed";
+    toast(msg, "error");
+  } finally { setLoading(false); }
+}
   return (
     <div className="app-shell">
       <div className="header-dark" style={{ paddingTop: 56 }}>
