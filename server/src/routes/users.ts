@@ -53,7 +53,6 @@ router.post(
       req.file.buffer,
       "dispatch/avatars",
       "image",
-      [{ width: 400, height: 400, crop: "fill", gravity: "face" }]
     );
 
     await prisma.user.update({
