@@ -1,4 +1,4 @@
-import React, { useEffect, useState, lazy, Suspense } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { tripApi, driverApi } from "../../api/client";
 import { useTripStore, Trip } from "../../store/tripStore";
@@ -6,9 +6,9 @@ import { useAuthStore } from "../../store/authStore";
 import { useSocket } from "../../hooks/useSocket";
 import { useGeolocation } from "../../hooks/useGeolocation";
 import { useToast } from "../../lib/toast";
-import { Icons, Avatar, StarRating, LocationCard, DriverCard, MapInfoCard, TicketCard } from "../../components/shared";
+import { Icons, Avatar, StarRating, MapInfoCard } from "../../components/shared";
+import DispatchMap from "../../components/map/DispatchMap";
 
-const DispatchMap = lazy(() => import("../../components/map/DispatchMap"));
 type Phase = "list" | "tracking" | "rating";
 
 export default function FindPassengersPage() {
@@ -38,56 +38,88 @@ export default function FindPassengersPage() {
   useEffect(() => {
     if (!activeTrip) return;
     if (activeTrip.status === "COMPLETED") setPhase("rating");
-    if (activeTrip.status === "CANCELLED") { toast("Passenger cancelled", "error"); setActiveTrip(null); setPhase("list"); }
-    if (["DRIVER_ASSIGNED","DRIVER_ARRIVED","IN_PROGRESS"].includes(activeTrip.status)) setPhase("tracking");
+    if (activeTrip.status === "CANCELLED") {
+      toast("Passenger cancelled", "error");
+      setActiveTrip(null);
+      setPhase("list");
+    }
+    if (["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"].includes(activeTrip.status)) {
+      setPhase("tracking");
+    }
   }, [activeTrip?.status]);
 
   async function accept(tripId: string) {
     setLoading(true);
     try {
       const { data } = await tripApi.accept(tripId);
-      setActiveTrip(data); joinTrip(tripId); setPhase("tracking");
+      setActiveTrip(data);
+      joinTrip(tripId);
+      setPhase("tracking");
     } catch (err: unknown) {
-      toast((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Could not accept", "error");
-    } finally { setLoading(false); }
+      toast(
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Could not accept",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function markArrived() {
     if (!activeTrip) return;
     await tripApi.arrived(activeTrip.id);
     const { data } = await tripApi.getOne(activeTrip.id);
-    setActiveTrip(data); toast("Passenger notified", "success");
+    setActiveTrip(data);
+    toast("Passenger notified", "success");
   }
 
   async function startTrip() {
     if (!activeTrip) return;
     await tripApi.start(activeTrip.id);
-    const { data } = await tripApi.getOne(activeTrip.id); setActiveTrip(data);
+    const { data } = await tripApi.getOne(activeTrip.id);
+    setActiveTrip(data);
   }
 
   async function endTrip() {
-    if (!activeTrip) return; setLoading(true);
+    if (!activeTrip) return;
+    setLoading(true);
     try {
       const { data } = await tripApi.complete(activeTrip.id);
-      setActiveTrip(data); setPhase("rating"); refreshUser();
+      setActiveTrip(data);
+      setPhase("rating");
+      refreshUser();
       toast(`M ${Number(data.driverEarning).toFixed(2)} earned!`, "success");
-    } catch { toast("Could not complete trip", "error"); }
-    finally { setLoading(false); }
+    } catch {
+      toast("Could not complete trip", "error");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function cancelTrip() {
     if (!activeTrip) return;
-    try { await tripApi.cancel(activeTrip.id); setActiveTrip(null); setPhase("list"); toast("Trip cancelled", "info"); }
-    catch { toast("Cancel failed", "error"); }
+    try {
+      await tripApi.cancel(activeTrip.id);
+      setActiveTrip(null);
+      setPhase("list");
+      toast("Trip cancelled", "info");
+    } catch {
+      toast("Cancel failed", "error");
+    }
   }
 
   async function submitRating() {
     if (!activeTrip) return;
-    try { await tripApi.rate(activeTrip.id, ratingScore, ratingReview); } catch {}
-    setActiveTrip(null); navigate("/driver");
+    try {
+      await tripApi.rate(activeTrip.id, ratingScore, ratingReview);
+    } catch {}
+    setActiveTrip(null);
+    navigate("/driver");
   }
 
-  const mapCenter = coords ?? (activeTrip ? { lat: activeTrip.pickupLat, lng: activeTrip.pickupLng } : undefined);
+  const mapCenter = coords ?? (activeTrip
+    ? { lat: activeTrip.pickupLat, lng: activeTrip.pickupLng }
+    : undefined);
 
   return (
     <div className="app-shell">
@@ -112,8 +144,11 @@ export default function FindPassengersPage() {
                 <div style={{ color: "var(--teal)", marginBottom: 16, display: "flex", justifyContent: "center" }}>{Icons.search}</div>
                 <div style={{ fontWeight: 600, marginBottom: 6 }}>No requests right now</div>
                 <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>Stay online — new trips appear instantly</div>
-                <button className="btn btn-outline" style={{ width: "auto", padding: "10px 24px", margin: "0 auto" }}
-                  onClick={() => tripApi.getAvailable().then(({ data }) => setAvailableTrips(data))}>
+                <button
+                  className="btn btn-outline"
+                  style={{ width: "auto", padding: "10px 24px", margin: "0 auto" }}
+                  onClick={() => tripApi.getAvailable().then(({ data }) => setAvailableTrips(data))}
+                >
                   Refresh
                 </button>
               </div>
@@ -135,7 +170,6 @@ export default function FindPassengersPage() {
                     </div>
                   </div>
 
-                  {/* Mini route display */}
                   <div style={{
                     background: "var(--bg-input)", borderRadius: "var(--r-md)",
                     padding: "12px 14px", marginBottom: 14,
@@ -156,10 +190,15 @@ export default function FindPassengersPage() {
                   <div className="flex gap-2">
                     <button className="btn btn-primary" style={{ flex: 1 }}
                       onClick={() => accept(trip.id)} disabled={loading}>
-                      {loading ? <span className="spinner spinner-dark" style={{ width: 18, height: 18 }} /> : "Accept"}
+                      {loading
+                        ? <span className="spinner spinner-dark" style={{ width: 18, height: 18 }} />
+                        : "Accept"}
                     </button>
-                    <button className="btn btn-outline" style={{ flex: 1, color: "var(--danger)", borderColor: "var(--danger)" }}
-                      onClick={() => tripApi.cancel(trip.id).catch(() => {})}>
+                    <button
+                      className="btn btn-outline"
+                      style={{ flex: 1, color: "var(--danger)", borderColor: "var(--danger)" }}
+                      onClick={() => tripApi.cancel(trip.id).catch(() => {})}
+                    >
                       Decline
                     </button>
                   </div>
@@ -174,16 +213,17 @@ export default function FindPassengersPage() {
       {phase === "tracking" && activeTrip && (
         <>
           <div style={{ flex: 1, position: "relative", minHeight: 300 }}>
-            <Suspense fallback={<div style={{ minHeight: 300, background: "var(--bg-surface)" }} />}>
-              <DispatchMap
-                center={mapCenter}
-                pickup={{ lat: activeTrip.pickupLat, lng: activeTrip.pickupLng }}
-                dropoff={{ lat: activeTrip.dropoffLat, lng: activeTrip.dropoffLng }}
-                driverLocation={coords ?? undefined}
-                height="100%"
-              />
-            </Suspense>
-            <div style={{ position: "absolute", top: 16, left: 16, right: 16, zIndex: 999, display: "flex", justifyContent: "space-between" }}>
+            <DispatchMap
+              center={mapCenter}
+              pickup={{ lat: activeTrip.pickupLat, lng: activeTrip.pickupLng }}
+              dropoff={{ lat: activeTrip.dropoffLat, lng: activeTrip.dropoffLng }}
+              driverLocation={coords ?? undefined}
+              height="100%"
+            />
+            <div style={{
+              position: "absolute", top: 16, left: 16, right: 16,
+              zIndex: 999, display: "flex", justifyContent: "space-between",
+            }}>
               <button className="map-btn" onClick={() => navigate("/driver")}>{Icons.back}</button>
               {activeTrip.distanceKm && (
                 <MapInfoCard distanceM={Math.round(activeTrip.distanceKm * 1000)} timeMin={activeTrip.durationMin} />
@@ -196,7 +236,10 @@ export default function FindPassengersPage() {
             <div className="px-5" style={{ paddingBottom: 28, paddingTop: 16 }}>
               {activeTrip.passenger && (
                 <div className="card" style={{ padding: "14px 18px", marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--orange)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 600, color: "var(--orange)",
+                    textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10,
+                  }}>
                     {activeTrip.status === "DRIVER_ASSIGNED" ? "Heading to pickup" :
                      activeTrip.status === "DRIVER_ARRIVED" ? "Waiting for passenger" :
                      activeTrip.status === "IN_PROGRESS" ? "Trip in progress" : ""}
@@ -237,12 +280,19 @@ export default function FindPassengersPage() {
                 )}
                 {activeTrip.status === "IN_PROGRESS" && (
                   <button className="btn btn-primary" onClick={endTrip} disabled={loading}>
-                    {loading ? <span className="spinner spinner-dark" style={{ width: 20, height: 20 }} /> : "End Trip & Collect Payment"}
+                    {loading
+                      ? <span className="spinner spinner-dark" style={{ width: 20, height: 20 }} />
+                      : "End Trip & Collect Payment"}
                   </button>
                 )}
                 {activeTrip.status !== "IN_PROGRESS" && (
-                  <button className="btn btn-outline" onClick={cancelTrip}
-                    style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>Cancel Trip</button>
+                  <button
+                    className="btn btn-outline"
+                    onClick={cancelTrip}
+                    style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+                  >
+                    Cancel Trip
+                  </button>
                 )}
               </div>
             </div>
@@ -257,7 +307,8 @@ export default function FindPassengersPage() {
             <div style={{
               width: 72, height: 72, borderRadius: "50%",
               background: "rgba(34,197,94,0.12)",
-              display: "flex", alignItems: "center", justifyContent: "center", color: "var(--success)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--success)",
             }}>{Icons.check}</div>
             <h2>Trip Complete!</h2>
             <p style={{ color: "var(--text-muted)" }}>
@@ -266,17 +317,22 @@ export default function FindPassengersPage() {
             <div className="divider w-full" />
             <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Rate your passenger (optional)</p>
             <div className="flex justify-center gap-2">
-              {[1,2,3,4,5].map(s => (
+              {[1, 2, 3, 4, 5].map(s => (
                 <button key={s} onClick={() => setRatingScore(s)} style={{
                   width: 40, height: 40, borderRadius: "50%", border: "none", cursor: "pointer",
                   background: s <= ratingScore ? "var(--orange)" : "var(--bg-input)",
                   color: s <= ratingScore ? "#fff" : "var(--text-muted)",
-                  display: "flex", alignItems: "center", justifyContent: "center", transition: "var(--t)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "var(--t)",
                 }}>{Icons.star}</button>
               ))}
             </div>
-            <input className="input w-full" value={ratingReview}
-              onChange={e => setRatingReview(e.target.value)} placeholder="Add a note (optional)" />
+            <input
+              className="input w-full"
+              value={ratingReview}
+              onChange={e => setRatingReview(e.target.value)}
+              placeholder="Add a note (optional)"
+            />
             <button className="btn btn-primary w-full" onClick={submitRating}>Done</button>
             <button className="btn btn-ghost" onClick={() => { setActiveTrip(null); navigate("/driver"); }}>Skip</button>
           </div>
