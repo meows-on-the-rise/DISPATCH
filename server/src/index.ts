@@ -4,7 +4,6 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-
 import { initSocket } from "./socket/io.js";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/users.js";
@@ -17,22 +16,35 @@ import reportRoutes from "./routes/reports.js";
 const app = express();
 const httpServer = http.createServer(app);
 
-// ── Global middleware ─────────────────────────────────────────────────────────
+// ── CORS ──────────────────────────────────────────────────────────────────────
+const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:5173")
+  .split(",")
+  .map((o) => o.trim());
 
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow server-to-server / curl (no origin header)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.some((o) => origin.startsWith(o))) {
+        return callback(null, true);
+      }
+      callback(new Error(`CORS blocked: ${origin}`));
+    },
+    credentials: true,
+  })
+);
+
+// ── Global middleware ─────────────────────────────────────────────────────────
 app.set("trust proxy", 1);
 app.use(helmet());
-app.use(cors({
-  origin: "https://dispatch-two-lac.vercel.app",
-  credentials: true
-})
-);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // General rate limiter
 app.use(
   rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 min
+    windowMs: 15 * 60 * 1000,
     max: 200,
     standardHeaders: true,
     legacyHeaders: false,
@@ -44,11 +56,10 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === "production" ? 200 : 1000,
   message: { error: "Too many requests, please try again later" },
-  skip: (req) => req.path === "/me", // never rate-limit the session check
+  skip: (req) => req.path === "/me",
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
@@ -61,9 +72,7 @@ app.use("/drivers", driverRoutes);
 app.use("/admin/reports", reportRoutes);
 app.use("/admin", adminRoutes);
 
-
 // ── 404 & Error handlers ──────────────────────────────────────────────────────
-
 app.use((_req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
@@ -81,11 +90,9 @@ app.use(
 );
 
 // ── Socket.IO ─────────────────────────────────────────────────────────────────
-
 initSocket(httpServer);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-
 const PORT = Number(process.env.PORT ?? 3000);
 httpServer.listen(PORT, () => {
   console.log(`🚀 Dispatch server running on port ${PORT}`);
