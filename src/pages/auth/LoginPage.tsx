@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router";
 import { authApi } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
 import { useToast } from "../../lib/toast";
-import { Icons } from "../../components/shared";
+import { Icons, PageHeader } from "../../components/shared";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -16,51 +16,37 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    if (!identifier || !password) return;
-    setLoading(true);
-    try {
-      const { data } = await authApi.login(identifier, password);
-      setAuth(data.user, data.accessToken, data.refreshToken);
-      const userRole = data.user.role;
+ async function handleLogin(e: React.FormEvent) {
+  e.preventDefault();
+  if (!identifier || !password) return;
+  setLoading(true);
+  try {
+    const { data } = await authApi.login(identifier, password);
+    setAuth(data.user, data.accessToken, data.refreshToken);
+    const userRole = data.user.role;
 
-      if (userRole === "ADMIN") {
-        navigate("/admin/verify", { state: { from: role } });
-      } else if (userRole === "PASSENGER" && role === "DRIVER") {
-        toast("This account is not a driver account", "error");
-        return;
-      } else if (userRole === "DRIVER" && role === "PASSENGER") {
-        toast("This account is not a passenger account", "error");
-        return;
-      } else {
-        navigate(role === "DRIVER" ? "/driver" : "/passenger");
-      }
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Login failed";
-      toast(msg, "error");
-    } finally { setLoading(false); }
-  }
-
+    if (userRole === "ADMIN") {
+      navigate("/admin/verify", { state: { from: role } });
+    } else if (userRole === "PASSENGER" && role === "DRIVER") {
+      toast("This account is not a driver account", "error");
+      return;
+    } else if (userRole === "DRIVER" && role === "PASSENGER") {
+      toast("This account is not a passenger account", "error");
+      return;
+    } else {
+      navigate(role === "DRIVER" ? "/driver" : "/passenger");
+    }
+  } catch (err: unknown) {
+    const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Login failed";
+    toast(msg, "error");
+  } finally { setLoading(false); }
+}
   return (
     <div className="app-shell">
-      <div className="header-dark" style={{ paddingTop: 56, alignItems: "center" }}>
-        <button className="btn-icon-dark" onClick={() => navigate("/")}
-          style={{ marginBottom: 24, alignSelf: "flex-start" }}>
+      <div className="header-dark" style={{ paddingTop: 56 }}>
+        <button className="btn-icon-dark" onClick={() => navigate("/")} style={{ marginBottom: 24 }}>
           {Icons.back}
         </button>
-
-        {/* Car icon */}
-        <img
-          src="/icon.png"
-          alt="Dispatch"
-          style={{
-            width: 140,
-            marginBottom: 20,
-            filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.35))',
-          }}
-        />
-
         <h2 style={{ color: "#fff", marginBottom: 6 }}>DISPATCH</h2>
         <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>Sign in to access your account</p>
       </div>
@@ -93,7 +79,6 @@ export default function LoginPage() {
                 position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
                 background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)",
               }}>
-                {showPw ? Icons.eyeOff : Icons.eye}
               </button>
             </div>
           </div>
@@ -111,8 +96,10 @@ export default function LoginPage() {
 
           <p style={{ textAlign: "center", fontSize: 13, color: "var(--text-muted)" }}>
             Don't have an account?{" "}
-            <span style={{ color: "var(--orange)", fontWeight: 600, cursor: "pointer" }}
-              onClick={() => navigate(role === "DRIVER" ? "/register?role=DRIVER" : "/register?role=PASSENGER")}>
+            <span
+              style={{ color: "var(--orange)", fontWeight: 600, cursor: "pointer" }}
+              onClick={() => navigate(role === "DRIVER" ? "/register?role=DRIVER" : "/register?role=PASSENGER")}
+            >
               Register
             </span>
           </p>
