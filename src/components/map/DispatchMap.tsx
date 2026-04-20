@@ -82,10 +82,10 @@ export default function DispatchMap({
     <MapContainer
       center={[def.lat, def.lng]} zoom={14}
       style={{ width: "100%", height }}
-      zoomControl={false} attributionControl={false}
+      zoomControl={true} attributionControl={false}
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="" />
-      {center && <Recenter center={center} />}
+      <Recenter center={def} />
       {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
       {pickup && dropoff && <OSRMRoute pickup={pickup} dropoff={dropoff} />}
       {pickup  && <Marker position={[pickup.lat,  pickup.lng]}  icon={fromIcon} />}
