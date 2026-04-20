@@ -1,5 +1,3 @@
-const dispatchLogo = '/apple-touch-icon.png';
-
 const LoadingScreen = () => {
   return (
     <div style={{
@@ -13,11 +11,15 @@ const LoadingScreen = () => {
       zIndex: 9999,
     }}>
       <img
-        src={dispatchLogo}
+        src="/icon.png"
         alt="Dispatch"
-        style={{ width: 100, borderRadius: 24, marginBottom: 20 }}
+        style={{
+          width: 160,
+          marginBottom: 28,
+          filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.4))',
+        }}
       />
-      <h1 style={{ color: '#fff', fontSize: 28, fontWeight: 700, marginBottom: 32 }}>
+      <h1 style={{ color: '#fff', fontSize: 28, fontWeight: 700, marginBottom: 32, letterSpacing: '0.08em' }}>
         DISPATCH
       </h1>
       <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
