@@ -9,7 +9,7 @@ const LoadingScreen = () => {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#0f0f0f',
+      backgroundColor: '#1a6b7a',
       zIndex: 9999,
     }}>
       <img
@@ -18,7 +18,7 @@ const LoadingScreen = () => {
         style={{ width: 100, borderRadius: 24, marginBottom: 20 }}
       />
       <h1 style={{ color: '#fff', fontSize: 28, fontWeight: 700, marginBottom: 32 }}>
-        Dispatch
+        DISPATCH
       </h1>
       <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
         {[0, 1, 2].map((i) => (
