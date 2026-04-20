@@ -55,6 +55,28 @@ export default function RequestRidePage() {
     }
   }, [coords]);
 
+  async function searchAddress(query: string, type: "pickup" | "dropoff") {
+  if (!query.trim()) return;
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=ls`
+    );
+    const data = await res.json();
+    if (data.length === 0) { toast("Address not found", "error"); return; }
+    const { lat, lon, display_name } = data[0];
+    const coords = { lat: parseFloat(lat), lng: parseFloat(lon) };
+    if (type === "pickup") {
+      setPickupCoords(coords);
+      setPickupAddr(display_name);
+    } else {
+      setDropoffCoords(coords);
+      setDropoffAddr(display_name);
+    }
+  } catch {
+    toast("Search failed", "error");
+  }
+}
+
   async function getEstimate() {
     if (!pickupCoords || !dropoffCoords) { toast("Set both locations on the map", "error"); return; }
     setLoading(true);
@@ -115,7 +137,7 @@ export default function RequestRidePage() {
       <div style={{ height: 320, position: "relative", flexShrink: 0 }}>
         <Suspense fallback={<div style={{ flex: 1, background: "var(--bg-surface)", minHeight: 280 }} />}>
           <DispatchMap
-            center={mapCenter}
+            center={mapCenter}  // already there, good
             pickup={pickupCoords ?? undefined}
             dropoff={dropoffCoords ?? undefined}
             driverLocation={driverLocation}
@@ -165,25 +187,44 @@ export default function RequestRidePage() {
         <div className="px-5" style={{ paddingBottom: 28, paddingTop: 16 }}>
 
           {/* ── Input phase ── */}
-          {phase === "input" && (
-            <div className="flex-col gap-4 page-enter">
-              {/* From/To input group */}
-              <div className="input-group">
-                <div className="input-row">
-                  <div className="input-dot-from" />
-                  <input value={pickupAddr} onChange={e => setPickupAddr(e.target.value)}
-                    placeholder="Pickup location" />
-                  <button className="input-swap" onClick={() => {
-                    const tmp = pickupCoords; setPickupCoords(dropoffCoords); setDropoffCoords(tmp);
-                    const ta = pickupAddr; setPickupAddr(dropoffAddr); setDropoffAddr(ta);
-                  }}>{Icons.swap}</button>
-                </div>
-                <div className="input-row">
-                  <div className="input-dot-to" />
-                  <input value={dropoffAddr} onChange={e => setDropoffAddr(e.target.value)}
-                    placeholder="Where to?" />
-                </div>
-              </div>
+          <div className="input-group">
+            <div className="input-row">
+              <div className="input-dot-from" />
+              <input
+                value={pickupAddr}
+                onChange={e => setPickupAddr(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && searchAddress(pickupAddr, "pickup")}
+                placeholder="Pickup location"
+              />
+              <button
+                type="button"
+                onClick={() => searchAddress(pickupAddr, "pickup")}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 8px" }}
+              >
+                {Icons.search}
+              </button>
+              <button className="input-swap" onClick={() => {
+                const tmp = pickupCoords; setPickupCoords(dropoffCoords); setDropoffCoords(tmp);
+                const ta = pickupAddr; setPickupAddr(dropoffAddr); setDropoffAddr(ta);
+              }}>{Icons.swap}</button>
+            </div>
+            <div className="input-row">
+              <div className="input-dot-to" />
+              <input
+                value={dropoffAddr}
+                onChange={e => setDropoffAddr(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && searchAddress(dropoffAddr, "dropoff")}
+                placeholder="Where to?"
+              />
+              <button
+                type="button"
+                onClick={() => searchAddress(dropoffAddr, "dropoff")}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 8px" }}
+              >
+                {Icons.search}
+              </button>
+            </div>
+          </div>
 
               {/* Seats */}
               <div className="flex items-center gap-3">
