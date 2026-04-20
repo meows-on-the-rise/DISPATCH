@@ -6,10 +6,21 @@ import { prisma } from "../lib/prisma.js";
 let io: SocketServer;
 
 export function initSocket(httpServer: HttpServer) {
+  const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:5173")
+    .split(",")
+    .map((o) => o.trim());
+
   io = new SocketServer(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL ?? "*",
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.some((o) => origin.startsWith(o))) {
+          return callback(null, true);
+        }
+        callback(new Error(`CORS blocked: ${origin}`));
+      },
       methods: ["GET", "POST"],
+      credentials: true,
     },
   });
 
@@ -39,7 +50,6 @@ export function initSocket(httpServer: HttpServer) {
 
     // Each user joins their personal room for targeted events
     socket.join(`user:${userId}`);
-
     console.log(`[socket] ${user.role} connected: ${userId}`);
 
     // ── Driver joins an active trip room ──────────────────────────────────
@@ -52,7 +62,6 @@ export function initSocket(httpServer: HttpServer) {
     });
 
     // ── Driver emits GPS location update ─────────────────────────────────
-    // (This is the Socket path — REST /drivers/location path also exists)
     socket.on(
       "driver:location",
       async (data: { lat: number; lng: number; tripId?: string }) => {
@@ -66,17 +75,16 @@ export function initSocket(httpServer: HttpServer) {
           .catch(() => {});
 
         if (data.tripId) {
-          // Forward to all clients watching this trip
           socket.to(`trip:${data.tripId}`).emit("driver:location", {
             lat: data.lat,
             lng: data.lng,
           });
 
-          // Record snapshot if trip is in progress
           const trip = await prisma.trip.findUnique({
             where: { id: data.tripId },
             select: { status: true, driverId: true },
           });
+
           if (
             trip &&
             trip.driverId === userId &&
