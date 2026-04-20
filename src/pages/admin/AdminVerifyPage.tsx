@@ -11,18 +11,26 @@ export default function AdminVerifyPage() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Already verified this session — skip straight to admin
+  useEffect(() => {
+    if (sessionStorage.getItem("admin_verified") === "true") {
+      navigate("/admin", { replace: true });
+    }
+  }, []);
+
   function handleVerify(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
       if (code === ADMIN_CODE) {
+        sessionStorage.setItem("admin_verified", "true"); // set flag
         navigate("/admin");
       } else {
         toast("Invalid admin code", "error");
         setCode("");
       }
       setLoading(false);
-    }, 600); // small delay to feel intentional
+    }, 600);
   }
 
   return (
