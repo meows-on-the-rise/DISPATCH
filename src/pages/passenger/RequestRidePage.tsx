@@ -112,7 +112,7 @@ export default function RequestRidePage() {
   return (
     <div className="app-shell">
       {/* Map fills top portion */}
-      <div style={{ flex: 1, position: "relative", minHeight: 280 }}>
+      <div style={{ height: 320, position: "relative", flexShrink: 0 }}>
         <Suspense fallback={<div style={{ flex: 1, background: "var(--bg-surface)", minHeight: 280 }} />}>
           <DispatchMap
             center={mapCenter}
