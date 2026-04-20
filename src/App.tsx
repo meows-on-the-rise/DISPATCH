@@ -47,7 +47,11 @@ function RedirectIfAuthed() {
   const { user } = useAuthStore();
   if (!user) return <UserSelectPage />;
   if (user.role === "DRIVER") return <Navigate to="/driver" replace />;
-  if (user.role === "ADMIN") return <Navigate to="/admin/verify" replace />;
+  if (user.role === "ADMIN") {
+    // Only send to verify if they haven't verified this session yet
+    const verified = sessionStorage.getItem("admin_verified") === "true";
+    return <Navigate to={verified ? "/admin" : "/admin/verify"} replace />;
+  }
   return <Navigate to="/passenger" replace />;
 }
 
