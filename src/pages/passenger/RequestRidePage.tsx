@@ -137,7 +137,7 @@ export default function RequestRidePage() {
       <div style={{ height: 320, position: "relative", flexShrink: 0 }}>
         <Suspense fallback={<div style={{ flex: 1, background: "var(--bg-surface)", minHeight: 280 }} />}>
           <DispatchMap
-            center={mapCenter}  // already there, good
+            center={mapCenter}  
             pickup={pickupCoords ?? undefined}
             dropoff={dropoffCoords ?? undefined}
             driverLocation={driverLocation}
@@ -187,46 +187,47 @@ export default function RequestRidePage() {
         <div className="px-5" style={{ paddingBottom: 28, paddingTop: 16 }}>
 
           {/* ── Input phase ── */}
-          <div className="input-group">
-            <div className="input-row">
-              <div className="input-dot-from" />
-              <input
-                value={pickupAddr}
-                onChange={e => setPickupAddr(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && searchAddress(pickupAddr, "pickup")}
-                placeholder="Pickup location"
-              />
-              <button
-                type="button"
-                onClick={() => searchAddress(pickupAddr, "pickup")}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 8px" }}
-              >
-                {Icons.search}
-              </button>
-              <button className="input-swap" onClick={() => {
-                const tmp = pickupCoords; setPickupCoords(dropoffCoords); setDropoffCoords(tmp);
-                const ta = pickupAddr; setPickupAddr(dropoffAddr); setDropoffAddr(ta);
-              }}>{Icons.swap}</button>
-            </div>
-            <div className="input-row">
-              <div className="input-dot-to" />
-              <input
-                value={dropoffAddr}
-                onChange={e => setDropoffAddr(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && searchAddress(dropoffAddr, "dropoff")}
-                placeholder="Where to?"
-              />
-              <button
-                type="button"
-                onClick={() => searchAddress(dropoffAddr, "dropoff")}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 8px" }}
-              >
-                {Icons.search}
-              </button>
-            </div>
-          </div>
+          {phase === "input" && (
+            <div className="flex-col gap-4 page-enter">
+              <div className="input-group">
+                <div className="input-row">
+                  <div className="input-dot-from" />
+                  <input
+                    value={pickupAddr}
+                    onChange={e => setPickupAddr(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && searchAddress(pickupAddr, "pickup")}
+                    placeholder="Pickup location"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => searchAddress(pickupAddr, "pickup")}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 8px" }}
+                  >
+                    {Icons.search}
+                  </button>
+                  <button className="input-swap" onClick={() => {
+                    const tmp = pickupCoords; setPickupCoords(dropoffCoords); setDropoffCoords(tmp);
+                    const ta = pickupAddr; setPickupAddr(dropoffAddr); setDropoffAddr(ta);
+                  }}>{Icons.swap}</button>
+                </div>
+                <div className="input-row">
+                  <div className="input-dot-to" />
+                  <input
+                    value={dropoffAddr}
+                    onChange={e => setDropoffAddr(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && searchAddress(dropoffAddr, "dropoff")}
+                    placeholder="Where to?"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => searchAddress(dropoffAddr, "dropoff")}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 8px" }}
+                  >
+                    {Icons.search}
+                  </button>
+                </div>
+              </div>
 
-              {/* Seats */}
               <div className="flex items-center gap-3">
                 <span style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 500, flexShrink: 0 }}>Seats</span>
                 <div className="flex gap-2">
