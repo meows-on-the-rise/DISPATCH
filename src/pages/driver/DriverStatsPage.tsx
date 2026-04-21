@@ -53,27 +53,6 @@ export default function DriverStatsPage() {
                 </div>
               ))}
             </div>
-
-            {/* Recent reviews */}
-            {stats.recentReviews.length > 0 && (
-              <>
-                <h3 style={{ fontFamily: "var(--font-display)", marginBottom: 12 }}>Recent Reviews</h3>
-                <div className="flex-col gap-3" style={{ paddingBottom: 24 }}>
-                  {stats.recentReviews.map((r, i) => (
-                    <div key={i} className="card" style={{ padding: "14px 16px" }}>
-                      <div className="flex justify-between items-center" style={{ marginBottom: 6 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{r.giver.fullName}</span>
-                        <span className="stars" style={{ fontSize: 14 }}>{"★".repeat(r.score)}{"☆".repeat(5 - r.score)}</span>
-                      </div>
-                      {r.review && <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{r.review}</p>}
-                      <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                        {new Date(r.createdAt).toLocaleDateString("en-LS", { day: "numeric", month: "short", year: "numeric" })}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
           </>
         )}
       </div>
