@@ -58,6 +58,7 @@ export const useAuthStore = create<AuthState>()(
         if (rt) authApi.logout(rt).catch(() => {});
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
+        localStorage.removeItem("dispatch-auth");
         set({ user: null, accessToken: null, refreshToken: null });
       },
 
