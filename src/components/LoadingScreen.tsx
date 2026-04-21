@@ -14,7 +14,7 @@ const LoadingScreen = () => {
         src="/icon.png"
         alt="Dispatch"
         style={{
-          width: 120,
+          width: 160,
           borderRadius: 24,
           marginBottom: 28,
           filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.4))',
