@@ -16,7 +16,7 @@ export default function UserSelectPage() {
           <img
             src="/icon.png"
             alt="Dispatch"
-            style={{ width: 100, height: 100, borderRadius: 24 }}
+            style={{ width: 140, height: 140, borderRadius: 24 }}
           />
         </div>
         <h1 style={{ color: "#fff", textAlign: "center", marginBottom: 12, lineHeight: 1.2 }}>
