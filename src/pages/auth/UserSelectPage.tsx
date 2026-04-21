@@ -13,13 +13,11 @@ export default function UserSelectPage() {
         padding: "48px 32px 32px",
       }}>
         <div style={{ marginBottom: 32 }}>
-          <div style={{
-            width: 100, height: 100, borderRadius: "50%",
-            background: "rgba(255,255,255,0.1)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {Icons.dispatch}
-          </div>
+          <img
+            src="/icon.png"
+            alt="Dispatch"
+            style={{ width: 100, height: 100, borderRadius: 24 }}
+          />
         </div>
         <h1 style={{ color: "#fff", textAlign: "center", marginBottom: 12, lineHeight: 1.2 }}>
           DISPATCH
