@@ -31,11 +31,17 @@ export default function RequestRidePage() {
   const [settingPoint, setSettingPoint] = useState<"pickup" | "dropoff">("pickup");
   const [completedTrip, setCompletedTrip] = useState<Trip | null>(null);
 
-  useEffect(() => {
-    if (activeTrip?.status === "DRIVER_ARRIVED") {
-      toast("Your driver has arrived!", "success");
-    }
-  }, [activeTrip?.status]);
+ const prevStatus = useRef<string | null>(null);
+
+useEffect(() => {
+  if (
+    activeTrip?.status === "DRIVER_ARRIVED" &&
+    prevStatus.current === "DRIVER_ASSIGNED"
+  ) {
+    toast("Your driver has arrived!", "success");
+  }
+  prevStatus.current = activeTrip?.status ?? null;
+}, [activeTrip?.status]);
 
   useEffect(() => {
     if (activeTrip && !["COMPLETED", "CANCELLED"].includes(activeTrip.status)) {
