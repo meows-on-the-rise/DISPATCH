@@ -136,12 +136,14 @@ const styles = StyleSheet.create({
   },
   th: {
     flex: 1,
-    padding: "9 8",
+    flexShrink: 1,
+    minWidth: 0,
+    padding: "9 6",
     color: "rgba(255,255,255,0.85)",
     fontSize: 7,
     fontFamily: "Helvetica-Bold",
     textTransform: "uppercase",
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
   row: {
     flexDirection: "row",
@@ -152,7 +154,9 @@ const styles = StyleSheet.create({
   rowOdd:  { backgroundColor: BG_LIGHT },
   td: {
     flex: 1,
-    padding: "8 8",
+    flexShrink: 1,
+    minWidth: 0,
+    padding: "7 6",
     fontSize: 8,
     color: DARK,
   },
@@ -329,15 +333,15 @@ function Footer({ page }: { page: string }) {
 
 export function TripSummaryPDF({ data }: { data: any }) {
   const rows = (data?.rows ?? []).map((r: any) => [
-    `#${r.tripId.slice(-8)}`,
-    r.passengerName,
-    r.driverName ?? "—",
-    r.pickupAddress.slice(0, 22),
-    r.dropoffAddress.slice(0, 22),
+    `#${String(r.tripId).slice(-8)}`,
+    String(r.passengerName ?? "—").slice(0, 16),
+    String(r.driverName ?? "—").slice(0, 16),
+    String(r.pickupAddress ?? "—").slice(0, 20),
+    String(r.dropoffAddress ?? "—").slice(0, 20),
     `${Number(r.distanceKm).toFixed(1)} km`,
     fmt(r.totalPrice),
     fmt(r.systemCommission),
-    r.status.replace(/_/g, " "),
+    String(r.status ?? "").replace(/_/g, " "),
     fmtDate(r.createdAt),
   ]);
 
@@ -359,9 +363,9 @@ export function TripSummaryPDF({ data }: { data: any }) {
           />
           <Text style={styles.sectionTitle}>Trip Records</Text>
           <Table
-            headers={["Trip ID", "Passenger", "Driver", "Pickup", "Dropoff", "Distance", "Total", "Commission", "Status", "Date"]}
+            headers={["Trip ID", "Passenger", "Driver", "Pickup", "Dropoff", "Dist", "Total", "Comm.", "Status", "Date"]}
             rows={rows}
-            widths={[1.2, 1.2, 1.2, 1.5, 1.5, 0.9, 1, 1, 1.2, 1]}
+            widths={[1.0, 1.3, 1.3, 1.6, 1.6, 0.8, 1.0, 0.9, 1.1, 1.0]}
           />
         </View>
         <Footer page={`Trip Summary · ${fmtDate(new Date().toISOString())}`} />
@@ -373,16 +377,16 @@ export function TripSummaryPDF({ data }: { data: any }) {
 export function DriverEarningsPDF({ data }: { data: any }) {
   const rows = (data?.rows ?? []).map((r: any, i: number) => [
     `#${i + 1}`,
-    r.fullName,
-    r.vehicle ?? "—",
-    r.plate ?? "—",
+    String(r.fullName ?? "—").slice(0, 18),
+    String(r.vehicle ?? "—").slice(0, 16),
+    String(r.plate ?? "—").slice(0, 12),
     r.isVerified ? "Verified" : "Pending",
     fmtNum(r.tripsCompleted),
     fmt(r.totalEarned),
     fmt(r.totalFaresGenerated ?? 0),
     fmt(r.walletBalance),
     `${r.totalKm} km`,
-    `${Number(r.avgRating).toFixed(1)} ★`,
+    `${Number(r.avgRating).toFixed(1)}*`,
   ]);
 
   return (
@@ -403,9 +407,9 @@ export function DriverEarningsPDF({ data }: { data: any }) {
           />
           <Text style={styles.sectionTitle}>Driver Breakdown</Text>
           <Table
-            headers={["#", "Driver", "Vehicle", "Plate", "Status", "Trips", "Earned", "Fares", "Wallet", "Distance", "Rating"]}
+            headers={["#", "Driver", "Vehicle", "Plate", "Status", "Trips", "Earned", "Fares", "Wallet", "Dist", "Rtg"]}
             rows={rows}
-            widths={[0.4, 1.4, 1.2, 0.9, 0.9, 0.7, 1, 1, 1, 0.9, 0.8]}
+            widths={[0.35, 1.5, 1.3, 0.9, 0.85, 0.6, 1.0, 1.0, 1.0, 0.8, 0.6]}
           />
         </View>
         <Footer page={`Driver Earnings · ${fmtDate(new Date().toISOString())}`} />
@@ -417,14 +421,14 @@ export function DriverEarningsPDF({ data }: { data: any }) {
 export function PassengerActivityPDF({ data }: { data: any }) {
   const rows = (data?.rows ?? []).map((r: any, i: number) => [
     `#${i + 1}`,
-    r.fullName,
-    r.phone,
+    String(r.fullName ?? "—").slice(0, 18),
+    String(r.phone ?? "—").slice(0, 14),
     fmtNum(r.totalTrips),
     fmtNum(r.completedTrips),
     fmtNum(r.cancelledTrips),
     fmt(r.totalSpent),
     fmt(r.walletBalance),
-    r.avgRatingGiven !== null ? `${r.avgRatingGiven} ★` : "—",
+    r.avgRatingGiven !== null ? `${r.avgRatingGiven}*` : "—",
     r.lastTripDate ? fmtDate(r.lastTripDate) : "—",
   ]);
 
@@ -446,9 +450,9 @@ export function PassengerActivityPDF({ data }: { data: any }) {
           />
           <Text style={styles.sectionTitle}>Passenger Breakdown</Text>
           <Table
-            headers={["#", "Passenger", "Phone", "Trips", "Done", "Cancelled", "Spent", "Wallet", "Avg Rating", "Last Trip"]}
+            headers={["#", "Passenger", "Phone", "Trips", "Done", "Cancl.", "Spent", "Wallet", "Rating", "Last Trip"]}
             rows={rows}
-            widths={[0.4, 1.4, 1.1, 0.7, 0.7, 0.9, 1, 1, 0.9, 1]}
+            widths={[0.35, 1.5, 1.1, 0.65, 0.65, 0.75, 1.0, 1.0, 0.75, 1.1]}
           />
         </View>
         <Footer page={`Passenger Activity · ${fmtDate(new Date().toISOString())}`} />
@@ -516,7 +520,7 @@ export function PlatformRevenuePDF({ data }: { data: any }) {
           <Table
             headers={["Date", "Trips", "Completed", "Cancelled", "Revenue", "Payouts", "Commission", "Distance"]}
             rows={rows}
-            widths={[1.2, 0.8, 1, 0.9, 1.1, 1.1, 1.1, 1]}
+            widths={[1.2, 0.7, 0.9, 0.9, 1.1, 1.1, 1.1, 0.9]}
           />
         </View>
         <Footer page={`Platform Revenue · ${fmtDate(new Date().toISOString())}`} />
