@@ -268,7 +268,7 @@ function TripSummaryReport({ onPrint }: { onPrint: () => void }) {
         </div>
         <button className="btn btn-primary" onClick={generate} disabled={loading}>
           {loading ? <span className="spinner spinner-dark" /> : <>{Icons.search} Generate Report</>}
-        </button>
+        </button
       </div>
 
       {data && (
@@ -581,16 +581,6 @@ export default function ReportsPage() {
           title="Reports"
           onBack={active ? () => setActive(null) : () => navigate("/admin")}
           dark
-          right={
-            active ? (
-              <button
-                onClick={handlePrint}
-                style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "var(--r-md)", padding: "8px 14px", cursor: "pointer", color: "#fff", fontSize: 12, fontWeight: 600, fontFamily: "var(--font)", display: "flex", alignItems: "center", gap: 6 }}
-              >
-                {Icons.document} Print
-              </button>
-            ) : undefined
-          }
         />
         {active && (
           <div style={{ padding: "0 20px" }}>
