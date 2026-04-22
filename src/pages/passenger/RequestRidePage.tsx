@@ -403,10 +403,10 @@ export default function RequestRidePage() {
               )}
               <LocationCard pickup={activeTrip.pickupAddress} dropoff={activeTrip.dropoffAddress}
                 distanceKm={activeTrip.distanceKm} durationMin={activeTrip.durationMin} />
-              {activeTrip.status !== "IN_PROGRESS" && (
-                <button className="btn btn-outline" onClick={cancelTrip}
-                  style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>Cancel Trip</button>
-              )}
+              <button className="btn btn-outline" onClick={cancelTrip}
+                style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
+                {activeTrip.status === "IN_PROGRESS" ? "Cancel (partial charge applies)" : "Cancel Trip"}
+              </button>
             </div>
           )}
         </div>
