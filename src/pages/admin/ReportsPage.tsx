@@ -272,7 +272,7 @@ function TripSummaryReport({ onPrint }: { onPrint: () => void }) {
       </div>
 
       {data && (
-        <div className="fade-in">
+        <div data-printable="true" className="fade-in">
           <ReportActions
             pdfDocument={<TripSummaryPDF data={data} />}
             fileName={`dispatch-trip-summary-${new Date().toISOString().slice(0, 10)}.pdf`}
@@ -333,7 +333,7 @@ function DriverEarningsReport({ onPrint }: { onPrint: () => void }) {
       </button>
 
       {data && (
-        <div className="fade-in">
+        <div data-printable="true" className="fade-in">
           <ReportActions
             pdfDocument={<DriverEarningsPDF data={data} />}
             fileName={`dispatch-driver-earnings-${new Date().toISOString().slice(0, 10)}.pdf`}
@@ -391,7 +391,7 @@ function PassengerActivityReport({ onPrint }: { onPrint: () => void }) {
       </button>
 
       {data && (
-        <div className="fade-in">
+        <div data-printable="true" className="fade-in">
           <ReportActions
             pdfDocument={<PassengerActivityPDF data={data} />}
             fileName={`dispatch-passenger-activity-${new Date().toISOString().slice(0, 10)}.pdf`}
@@ -455,7 +455,7 @@ function PlatformRevenueReport({ onPrint }: { onPrint: () => void }) {
       </div>
 
       {data && (
-        <div className="fade-in">
+        <div data-printable="true" className="fade-in">
           <ReportActions
             pdfDocument={<PlatformRevenuePDF data={data} />}
             fileName={`dispatch-platform-revenue-${new Date().toISOString().slice(0, 10)}.pdf`}
@@ -511,8 +511,18 @@ export default function ReportsPage() {
   const activeReport = REPORTS.find((r) => r.key === active);
 
   function handlePrint() {
-    const content = printRef.current;
-    if (!content) return;
+    const container = printRef.current;
+    if (!container) return;
+
+    // Only extract the results section — skip filter cards and generate buttons
+    const printable = container.querySelector("[data-printable='true']");
+    if (!printable) return;
+
+    // Clone and strip the PDF/Print action bar
+    const clone = printable.cloneNode(true) as HTMLElement;
+    const actionBar = clone.querySelector(".flex.gap-2");
+    if (actionBar) actionBar.remove();
+
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(`
@@ -534,13 +544,15 @@ export default function ReportsPage() {
             .body { padding: 0 24px 32px; }
             table { width: 100%; border-collapse: collapse; border: 1px solid #ddeef0; margin-top: 8px; }
             thead tr { background: #0d4f5c; }
-            th { padding: 9px 8px; color: rgba(255,255,255,0.85); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; text-align: left; }
-            td { padding: 8px 8px; font-size: 10px; color: #0d2d35; border-bottom: 1px solid #ddeef0; }
+            th { padding: 9px 8px; color: rgba(255,255,255,0.85); font-size: 9px; font-weight: 700;
+                 text-transform: uppercase; letter-spacing: 0.6px; text-align: left; white-space: nowrap; }
+            td { padding: 8px 8px; font-size: 10px; color: #0d2d35; border-bottom: 1px solid #ddeef0;
+                 max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             tr:nth-child(even) td { background: #f4fafa; }
             tr:nth-child(odd) td { background: #fff; }
-            .footer { margin: 24px 24px 0; padding-top: 8px; border-top: 1px solid #ddeef0; display: flex; justify-content: space-between; font-size: 9px; color: #8fa8ae; }
-            .report-actions, .btn, .input-wrap, .input-label, select, input { display: none !important; }
-            .card { background: #fff; border-radius: 10px; padding: 16px; border: 1px solid #ddeef0; margin-bottom: 16px; }
+            .footer { margin: 24px 24px 0; padding-top: 8px; border-top: 1px solid #ddeef0;
+                      display: flex; justify-content: space-between; font-size: 9px; color: #8fa8ae; }
+            button, select, input, .btn, .spinner { display: none !important; }
             @media print { body { background: #e8f2f3; } }
           </style>
         </head>
@@ -560,7 +572,7 @@ export default function ReportsPage() {
             <div class="header-desc">${activeReport?.description ?? ""}</div>
           </div>
           <div class="body">
-            ${content.innerHTML}
+            ${clone.innerHTML}
           </div>
           <div class="footer">
             <span>DISPATCH — Confidential Report</span>
