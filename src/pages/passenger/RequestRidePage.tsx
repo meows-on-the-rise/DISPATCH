@@ -267,6 +267,7 @@ export default function RequestRidePage() {
                     onChange={e => setPickupAddr(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && searchAddress(pickupAddr, "pickup")}
                     placeholder="Pickup location"
+                    style={{ minWidth: 0, flex: 1 }}
                   />
                   <button type="button" onClick={() => searchAddress(pickupAddr, "pickup")}
                     style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 8px" }}>
@@ -284,6 +285,7 @@ export default function RequestRidePage() {
                     onChange={e => setDropoffAddr(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && searchAddress(dropoffAddr, "dropoff")}
                     placeholder="Where to?"
+                    style={{ minWidth: 0, flex: 1 }}
                   />
                   <button type="button" onClick={() => searchAddress(dropoffAddr, "dropoff")}
                     style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 8px" }}>
