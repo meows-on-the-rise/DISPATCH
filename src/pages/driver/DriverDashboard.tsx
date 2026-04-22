@@ -118,7 +118,13 @@ export default function DriverDashboard() {
             </button>
         }
 
-        <button onClick={() => { logout(); navigate("/", { replace: true, state: {} }); }}
+        <button onClick={async () => {
+          if (isClockedIn) {
+            try { await driverApi.toggleClock(); } catch {}
+          }
+          logout();
+          navigate("/", { replace: true });
+        }}
           style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)",
             fontSize: 13, width: "100%", padding: "16px 0", marginTop: 8,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
