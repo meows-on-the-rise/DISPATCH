@@ -285,15 +285,13 @@ export default function FindPassengersPage() {
                       : "End Trip & Collect Payment"}
                   </button>
                 )}
-                {activeTrip.status !== "IN_PROGRESS" && (
-                  <button
-                    className="btn btn-outline"
-                    onClick={cancelTrip}
-                    style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
-                  >
-                    Cancel Trip
-                  </button>
-                )}
+                <button
+                  className="btn btn-outline"
+                  onClick={cancelTrip}
+                  style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+                >
+                  Cancel Trip
+                </button>
               </div>
             </div>
           </div>
