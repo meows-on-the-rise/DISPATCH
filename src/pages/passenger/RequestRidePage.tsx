@@ -270,10 +270,10 @@ export default function RequestRidePage() {
                     style={{ minWidth: 0, flex: 1 }}
                   />
                   <button type="button" onClick={() => searchAddress(pickupAddr, "pickup")}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 8px" }}>
-                    {Icons.search}
-                  </button>
-                  <button className="input-swap" onClick={() => {
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 4px", flexShrink: 0 }}>
+                  {Icons.search}
+                </button>
+                  <button className="input-swap" style={{ flexShrink: 0 }} onClick={() => {
                     const tmp = pickupCoords; setPickupCoords(dropoffCoords); setDropoffCoords(tmp);
                     const ta = pickupAddr; setPickupAddr(dropoffAddr); setDropoffAddr(ta);
                   }}>{Icons.swap}</button>
