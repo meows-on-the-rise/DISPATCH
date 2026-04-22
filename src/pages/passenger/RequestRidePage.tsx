@@ -29,14 +29,13 @@ export default function RequestRidePage() {
   const [ratingScore, setRatingScore] = useState(5);
   const [ratingReview, setRatingReview] = useState("");
   const [settingPoint, setSettingPoint] = useState<"pickup" | "dropoff">("pickup");
-  // Snapshot the completed trip so rating screen has data even after activeTrip is cleared
   const [completedTrip, setCompletedTrip] = useState<Trip | null>(null);
 
   useEffect(() => {
-  if (activeTrip?.status === "DRIVER_ARRIVED") {
-    toast("Your driver has arrived!", "success");
-  }
-}, [activeTrip?.status]);
+    if (activeTrip?.status === "DRIVER_ARRIVED") {
+      toast("Your driver has arrived!", "success");
+    }
+  }, [activeTrip?.status]);
 
   useEffect(() => {
     if (activeTrip && !["COMPLETED", "CANCELLED"].includes(activeTrip.status)) {
@@ -48,7 +47,7 @@ export default function RequestRidePage() {
   useEffect(() => {
     if (!activeTrip) return;
     if (activeTrip.status === "COMPLETED") {
-      setCompletedTrip({ ...activeTrip}); // deep copy
+      setCompletedTrip({ ...activeTrip });
       setPhase("rating");
     }
     if (activeTrip.status === "CANCELLED") {
@@ -140,17 +139,6 @@ export default function RequestRidePage() {
   }
 
   const mapCenter = pickupCoords ?? (coords ?? { lat: -29.3167, lng: 27.4833 });
-  const ratingTrip = completedTrip ?? activeTrip;
-
-  if (phase === "rating") {
-  const trip = completedTrip;
-  if (!trip) { navigate("/passenger"); return null; }
-  return (
-    <div className="app-shell" style={{ justifyContent: "center", padding: "40px 24px" }}>
-      {/* rest of rating screen using trip instead of completedTrip */}
-    </div>
-  );
-}
 
   // ── Rating phase — shown fullscreen, no map ──────────────────────────────
   if (phase === "rating" && completedTrip) {
@@ -286,9 +274,9 @@ export default function RequestRidePage() {
                     style={{ minWidth: 0, flex: 1 }}
                   />
                   <button type="button" onClick={() => searchAddress(pickupAddr, "pickup")}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 4px", flexShrink: 0 }}>
-                  {Icons.search}
-                </button>
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 4px", flexShrink: 0 }}>
+                    {Icons.search}
+                  </button>
                   <button className="input-swap" style={{ flexShrink: 0 }} onClick={() => {
                     const tmp = pickupCoords; setPickupCoords(dropoffCoords); setDropoffCoords(tmp);
                     const ta = pickupAddr; setPickupAddr(dropoffAddr); setDropoffAddr(ta);
@@ -409,6 +397,7 @@ export default function RequestRidePage() {
               </button>
             </div>
           )}
+
         </div>
       </div>
     </div>
