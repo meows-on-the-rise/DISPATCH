@@ -137,7 +137,7 @@ export default function RequestRidePage() {
   const ratingTrip = completedTrip ?? activeTrip;
 
   // ── Rating phase — shown fullscreen, no map ──────────────────────────────
-  if (phase === "rating" && ratingTrip) {
+  if (phase === "rating" && completedTrip) {
     return (
       <div className="app-shell" style={{ justifyContent: "center", padding: "40px 24px" }}>
         <div className="page-enter flex-col gap-4 text-center items-center" style={{ width: "100%" }}>
@@ -154,12 +154,12 @@ export default function RequestRidePage() {
             <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
               You paid{" "}
               <strong style={{ color: "var(--orange)" }}>
-                M {Number(ratingTrip.totalPrice ?? 0).toFixed(2)}
+                M {Number(completedTrip.totalPrice ?? 0).toFixed(2)}
               </strong>
             </p>
           </div>
           <div className="divider w-full" />
-          {ratingTrip.driver && (
+          {completedTrip.driver && (
             <div style={{ width: "100%" }}>
               <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 12 }}>
                 Rate your driver
