@@ -268,7 +268,7 @@ function TripSummaryReport({ onPrint }: { onPrint: () => void }) {
         </div>
         <button className="btn btn-primary" onClick={generate} disabled={loading}>
           {loading ? <span className="spinner spinner-dark" /> : <>{Icons.search} Generate Report</>}
-        </button
+        </button>
       </div>
 
       {data && (
