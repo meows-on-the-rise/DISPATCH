@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   MapContainer, TileLayer, Marker, Polyline,
-  useMap, useMapEvents, CircleMarker,
+  useMap, useMapEvents, CircleMarker, ZoomControl,
 } from "react-leaflet";
 import L from "leaflet";
 
@@ -82,9 +82,10 @@ export default function DispatchMap({
     <MapContainer
       center={[def.lat, def.lng]} zoom={14}
       style={{ width: "100%", height }}
-      zoomControl={true} attributionControl={false}
+      zoomControl={false} attributionControl={false}
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="" />
+      <ZoomControl position="bottomright" />
       <Recenter center={def} />
       {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
       {pickup && dropoff && <OSRMRoute pickup={pickup} dropoff={dropoff} />}
