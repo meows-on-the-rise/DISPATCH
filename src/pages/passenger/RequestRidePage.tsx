@@ -33,6 +33,12 @@ export default function RequestRidePage() {
   const [completedTrip, setCompletedTrip] = useState<Trip | null>(null);
 
   useEffect(() => {
+  if (activeTrip?.status === "DRIVER_ARRIVED") {
+    toast("Your driver has arrived!", "success");
+  }
+}, [activeTrip?.status]);
+
+  useEffect(() => {
     if (activeTrip && !["COMPLETED", "CANCELLED"].includes(activeTrip.status)) {
       setPhase("tracking");
       joinTrip(activeTrip.id);
