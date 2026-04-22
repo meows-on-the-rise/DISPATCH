@@ -269,8 +269,8 @@ router.post("/:id/cancel", authenticate, async (req: AuthRequest, res: Response)
   const { reason } = req.body;
   let chargePassenger = false;
 
-  // If trip IN_PROGRESS and driver cancels — charge for distance so far (partial)
-  if (trip.status === "IN_PROGRESS" && isDriver) {
+  // If trip IN_PROGRESS and passenger cancels — charge for distance so far (partial)
+  if (trip.status === "IN_PROGRESS" && isPassenger) {
     chargePassenger = true;
   }
 
