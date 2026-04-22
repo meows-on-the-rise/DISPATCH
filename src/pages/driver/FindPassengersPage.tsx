@@ -118,8 +118,8 @@ export default function FindPassengersPage() {
   }
 
   const mapCenter = coords ?? (activeTrip
-    ? { lat: activeTrip.pickupLat, lng: activeTrip.pickupLng }
-    : undefined);
+  ? { lat: activeTrip.pickupLat, lng: activeTrip.pickupLng }
+  : { lat: -29.3167, lng: 27.4833 }); // fallback to Maseru
 
   return (
     <div className="app-shell">
