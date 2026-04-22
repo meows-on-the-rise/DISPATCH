@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
- async function handleLogin(e: React.FormEvent) {
+async function handleLogin(e: React.FormEvent) {
   e.preventDefault();
   if (!identifier || !password) return;
   setLoading(true);
@@ -24,7 +24,6 @@ export default function LoginPage() {
     const { data } = await authApi.login(identifier, password);
     setAuth(data.user, data.accessToken, data.refreshToken);
     const userRole = data.user.role;
-
     if (userRole === "ADMIN") {
       navigate("/admin/verify", { state: { from: role } });
     } else if (userRole === "PASSENGER" && role === "DRIVER") {
