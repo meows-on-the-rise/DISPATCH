@@ -31,7 +31,8 @@ jobs:
           tauriScript: npx tauri
           appName: dispatch-app
           appVersion: 1.0.0
-          frontendDist: ../dist
+          distPath: ../dist
+          bundleIdentifier: com.dispatch.app
 
       - name: Upload .exe
         uses: actions/upload-artifact@v4
