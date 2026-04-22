@@ -46,10 +46,10 @@ export const useAuthStore = create<AuthState>()(
       isLoading: true,
 
       setAuth: (user, accessToken, refreshToken) => {
-        localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("refreshToken", refreshToken);
-        set({ user, accessToken, refreshToken });
-      },
+  localStorage.setItem("accessToken", accessToken);
+  localStorage.setItem("refreshToken", refreshToken);
+  set({ user, accessToken, refreshToken, isLoading: false });
+  },
 
       setUser: (user) => set({ user }),
 
