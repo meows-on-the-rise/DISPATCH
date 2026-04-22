@@ -212,7 +212,7 @@ export default function FindPassengersPage() {
       {/* ── Tracking phase ── */}
       {phase === "tracking" && activeTrip && (
         <>
-          <div style={{ flex: 1, position: "relative", minHeight: 300 }}>
+          <div style={{ height: 320, position: "relative", flexShrink: 0 }}>
             <DispatchMap
               center={mapCenter}
               pickup={{ lat: activeTrip.pickupLat, lng: activeTrip.pickupLng }}
