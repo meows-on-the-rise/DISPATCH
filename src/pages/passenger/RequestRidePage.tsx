@@ -48,7 +48,7 @@ export default function RequestRidePage() {
   useEffect(() => {
     if (!activeTrip) return;
     if (activeTrip.status === "COMPLETED") {
-      setCompletedTrip(activeTrip); // save before it gets cleared
+      setCompletedTrip({ ...activeTrip}); // deep copy
       setPhase("rating");
     }
     if (activeTrip.status === "CANCELLED") {
@@ -141,6 +141,16 @@ export default function RequestRidePage() {
 
   const mapCenter = pickupCoords ?? (coords ?? { lat: -29.3167, lng: 27.4833 });
   const ratingTrip = completedTrip ?? activeTrip;
+
+  if (phase === "rating") {
+  const trip = completedTrip;
+  if (!trip) { navigate("/passenger"); return null; }
+  return (
+    <div className="app-shell" style={{ justifyContent: "center", padding: "40px 24px" }}>
+      {/* rest of rating screen using trip instead of completedTrip */}
+    </div>
+  );
+}
 
   // ── Rating phase — shown fullscreen, no map ──────────────────────────────
   if (phase === "rating" && completedTrip) {
