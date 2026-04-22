@@ -180,11 +180,14 @@ export default function FindPassengersPage() {
                         <div className="route-line-v" style={{ minHeight: 16 }} />
                         <div className="route-dot-to" />
                       </div>
-                      <div className="flex-1">
-                        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }} className="truncate">{trip.pickupAddress}</div>
-                        <div style={{ fontSize: 13, fontWeight: 500 }} className="truncate">{trip.dropoffAddress}</div>
+                      <div className="flex-1" style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }} className="truncate">
+                          {trip.pickupAddress}
+                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 500 }} className="truncate">
+                          {trip.dropoffAddress}
+                        </div>
                       </div>
-                    </div>
                   </div>
 
                   <div className="flex gap-2">
@@ -246,11 +249,14 @@ export default function FindPassengersPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Avatar src={activeTrip.passenger.avatarUrl} name={activeTrip.passenger.fullName} size={44} />
-                    <div className="flex-1">
-                      <div style={{ fontWeight: 700 }}>{activeTrip.passenger.fullName}</div>
-                      <StarRating value={activeTrip.passenger.rating} />
+                    <div className="flex-1" style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }} className="truncate">
+                        {trip.pickupAddress}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 500 }} className="truncate">
+                        {trip.dropoffAddress}
+                      </div>
                     </div>
-                  </div>
                 </div>
               )}
 
