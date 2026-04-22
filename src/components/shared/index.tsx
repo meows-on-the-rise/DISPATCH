@@ -193,7 +193,7 @@ export function LocationCard({
           <div className="route-line-v" style={{ minHeight: 32 }} />
           <div className="route-dot-to" />
         </div>
-        <div className="flex-1 flex-col" style={{ gap: 0 }}>
+        <div className="flex-1 flex-col" style={{ gap: 0, minWidth: 0, overflow: "hidden" }}>
           <div style={{ marginBottom: 16 }}>
             <div className="location-name truncate">{pickup}</div>
             <div className="location-sub">Pickup Point</div>
@@ -344,7 +344,7 @@ export function TicketCard({
             <div className="route-line-v" style={{ minHeight: 24 }} />
             <div className="route-dot-to" />
           </div>
-          <div className="flex-1">
+          <div className="flex-1" style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 20 }} className="truncate">{from}</div>
             <div style={{ fontWeight: 700, fontSize: 15 }} className="truncate">{to}</div>
           </div>
