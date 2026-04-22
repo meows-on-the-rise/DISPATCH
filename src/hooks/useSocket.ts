@@ -31,8 +31,20 @@ export function useSocket() {
 
     // ── Passenger events ──────────────────────────────────────────────────
     socket.on("trip:updated", (trip: Trip) => {
-      setActiveTrip(trip);
-      // If completed, also refresh wallet
+  const prev = useTripStore.getState().activeTrip;
+  setActiveTrip(trip);
+  // Notify passenger when driver arrives
+  if (
+    trip.status === "DRIVER_ARRIVED" &&
+    prev?.status === "DRIVER_ASSIGNED"
+  ) {
+    // Import and use toast
+    const event = new CustomEvent("dispatch:toast", {
+      detail: { message: "Your driver has arrived!", type: "success" }
+    });
+    window.dispatchEvent(event);
+  }
+});
     });
 
     socket.on("trip:cancelled", ({ tripId }: { tripId: string; by: string }) => {
