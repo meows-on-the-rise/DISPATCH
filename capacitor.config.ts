@@ -7,6 +7,7 @@ const config: CapacitorConfig = {
   server: {
     // Remove this block when building for production
     // url: "http://192.168.x.x:5173", // your dev machine IP for live reload
+    androidScheme: "https",
     cleartext: true,
   },
   plugins: {
