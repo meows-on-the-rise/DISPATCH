@@ -59,6 +59,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("dispatch-auth");
+        sessionStorage.removeItem("admin_verified");
         set({ user: null, accessToken: null, refreshToken: null, isLoading: false });
       },
 
