@@ -40,6 +40,8 @@ export default function DriverDashboard() {
     { icon: Icons.document, label: "Documents", path: "/driver/documents" },
   ];
 
+  const hasVehicleInfo = !!(profile?.vehicleMake && profile?.vehicleModel && profile?.vehiclePlate);
+
   return (
     <div className="app-shell">
       <div className="header-dark" style={{ paddingBottom: 32 }}>
@@ -110,7 +112,7 @@ export default function DriverDashboard() {
           ))}
         </div>
 
-        const hasVehicleInfo = !!(profile?.vehicleMake && profile?.vehicleModel && profile?.vehiclePlate);
+        
 
         {isClockedIn
           ? <button
