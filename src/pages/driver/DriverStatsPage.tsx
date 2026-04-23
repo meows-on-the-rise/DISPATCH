@@ -24,7 +24,9 @@ export default function DriverStatsPage() {
       <PageHeader title="My Stats" onBack={() => navigate("/driver")} />
       <div className="scroll-area flex-1 px-4">
         <div className="card-elevated text-center page-enter" style={{ marginBottom: 20, padding: "28px 20px" }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>🚗</div>
+          <div style={{ color: "var(--teal)", display: "flex", justifyContent: "center", marginBottom: 8 }}>
+            {Icons.car}
+          </div>
           <h2 style={{ fontFamily: "var(--font-display)", marginBottom: 4 }}>{user?.fullName}</h2>
           <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 12 }}>ID: {user?.userId}</p>
           {user && <StarRating value={user.rating} count={user.reviewCount} />}
@@ -41,14 +43,14 @@ export default function DriverStatsPage() {
           <>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
               {[
-                { emoji: "🚕", label: "Trips Completed", value: stats.totalTrips, color: "var(--purple-light)" },
-                { emoji: "💵", label: "Total Earned", value: `M ${Number(stats.totalEarned).toFixed(2)}`, color: "var(--teal)" },
-                { emoji: "📍", label: "Distance Driven", value: `${Number(stats.totalDistanceKm).toFixed(0)} km`, color: "var(--warning)" },
-                { emoji: "⭐", label: "Avg. Rating", value: user?.rating.toFixed(1) ?? "5.0", color: "#f5a623" },
-              ].map(({ emoji, label, value, color }) => (
+                { icon: Icons.car,      label: "Trips Completed", value: stats.totalTrips,                            color: "var(--teal)" },
+                { icon: Icons.wallet,   label: "Total Earned",    value: `M ${Number(stats.totalEarned).toFixed(2)}`, color: "var(--orange)" },
+                { icon: Icons.location, label: "Distance Driven", value: `${Number(stats.totalDistanceKm).toFixed(0)} km`, color: "var(--teal-mid)" },
+                { icon: Icons.star,     label: "Avg. Rating",     value: user?.rating.toFixed(1) ?? "5.0",            color: "var(--success)" },
+              ].map(({ icon, label, value, color }) => (
                 <div key={label} className="card" style={{ padding: "20px 16px", textAlign: "center" }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>{emoji}</div>
-                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 20, color }}>{value}</div>
+                  <div style={{ color, display: "flex", justifyContent: "center", marginBottom: 10 }}>{icon}</div>
+                  <div style={{ fontWeight: 800, fontSize: 20, color }}>{value}</div>
                   <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{label}</div>
                 </div>
               ))}
