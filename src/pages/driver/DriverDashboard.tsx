@@ -110,8 +110,22 @@ export default function DriverDashboard() {
           ))}
         </div>
 
+        const hasVehicleInfo = !!(profile?.vehicleMake && profile?.vehicleModel && profile?.vehiclePlate);
+
         {isClockedIn
-          ? <button className="btn btn-primary" onClick={() => navigate("/driver/find")}>Find Passengers</button>
+          ? <button
+              className="btn btn-primary"
+              onClick={() => {
+                if (!hasVehicleInfo) {
+                  toast("Please complete your vehicle info in your profile first", "error");
+                  navigate("/driver/profile");
+                  return;
+                }
+                navigate("/driver/find");
+              }}
+            >
+              Find Passengers
+            </button>
           : <button className="btn btn-dark" onClick={() => handleClock(true)} disabled={!allDocsVerified}
               style={{ opacity: allDocsVerified ? 1 : 0.5 }}>
               {allDocsVerified ? "Clock In to Start" : "Complete verification first"}
