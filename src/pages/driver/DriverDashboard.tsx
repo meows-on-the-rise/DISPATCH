@@ -49,7 +49,7 @@ export default function DriverDashboard() {
             <Avatar src={user?.avatarUrl} name={user?.fullName ?? "?"} size={40} />
             <div style={{ textAlign: "left" }}>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Driver</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{user?.fullName?.split(" ")[0]}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{user?.username}</div>
             </div>
           </button>
           <div className="flex items-center gap-3">
