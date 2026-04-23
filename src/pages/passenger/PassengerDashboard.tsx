@@ -36,7 +36,7 @@ export default function PassengerDashboard() {
             <Avatar src={user?.avatarUrl} name={user?.fullName ?? "?"} size={40} />
             <div style={{ textAlign: "left" }}>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Good day,</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{user?.fullName?.split(" ")[0]}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{user?.username}</div>
             </div>
           </button>
           <BalanceBadge amount={balance} />
