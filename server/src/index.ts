@@ -23,10 +23,13 @@ const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:5173")
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow server-to-server / curl (no origin header)
+   origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.some((o) => origin.startsWith(o))) {
+        return callback(null, true);
+      }
+      // Allow all capacitor and localhost origins for mobile
+      if (!origin || origin.startsWith("capacitor://") || origin.startsWith("https://localhost") || origin.startsWith("http://localhost")) {
         return callback(null, true);
       }
       callback(new Error(`CORS blocked: ${origin}`));
