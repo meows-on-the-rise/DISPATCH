@@ -51,18 +51,19 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    if (!activeTrip) return;
-    if (activeTrip.status === "COMPLETED") {
-      setCompletedTrip({ ...activeTrip });
-      setPhase("rating");
-    }
-    if (activeTrip.status === "CANCELLED") {
-      toast("Trip was cancelled", "error");
-      setActiveTrip(null);
-      setPhase("input");
-    }
-  }, [activeTrip?.status]);
-
+  if (!activeTrip) return;
+  if (activeTrip.status === "COMPLETED" && !completedTrip) {
+    setCompletedTrip({ ...activeTrip });
+    setPhase("rating");
+  }
+  if (activeTrip.status === "CANCELLED") {
+    toast("Trip was cancelled", "error");
+    setActiveTrip(null);
+    setPhase("input");
+    navigate("/passenger");
+  }
+}, [activeTrip?.status]);
+  
   useEffect(() => {
     if (coords && !pickupCoords) {
       setPickupCoords(coords);
@@ -126,13 +127,14 @@ useEffect(() => {
   }
 
   async function cancelTrip() {
-    if (!activeTrip) return;
-    try {
-      await tripApi.cancel(activeTrip.id);
-      setActiveTrip(null); setPhase("input");
-      toast("Trip cancelled", "info");
-    } catch { toast("Could not cancel", "error"); }
-  }
+  if (!activeTrip) return;
+  try {
+    await tripApi.cancel(activeTrip.id);
+    setActiveTrip(null);
+    toast("Trip cancelled", "info");
+    navigate("/passenger");
+  } catch { toast("Could not cancel", "error"); }
+}
 
   async function submitRating() {
     const trip = completedTrip ?? activeTrip;
