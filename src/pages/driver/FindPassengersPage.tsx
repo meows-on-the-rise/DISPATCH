@@ -46,7 +46,9 @@ export default function FindPassengersPage() {
     if (activeTrip.status === "CANCELLED") {
       toast("Passenger cancelled the trip", "error");
       setActiveTrip(null);
+      setCompletedTrip(null);
       setPhase("list");
+      navigate("/driver/find");
     }
     if (["DRIVER_ASSIGNED", "DRIVER_ARRIVED", "IN_PROGRESS"].includes(activeTrip.status)) {
       setPhase("tracking");
