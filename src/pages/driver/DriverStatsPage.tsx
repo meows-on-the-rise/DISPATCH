@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { userApi } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
-import { PageHeader, StarRating } from "../../components/shared";
+import { Icons, PageHeader, StarRating } from "../../components/shared";
 
 interface Stats {
   totalTrips: number; totalEarned: number; totalDistanceKm: number;
