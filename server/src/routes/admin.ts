@@ -229,6 +229,21 @@ router.patch("/trips/:id", async (req: AuthRequest, res: Response) => {
   res.json(trip);
 });
 
+// ── GET /admin/reviews ───────────────────────────────────────────────────────
+
+router.get("/reviews", async (_req, res: Response) => {
+  const ratings = await prisma.rating.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: {
+      giver:    { select: { fullName: true, avatarUrl: true, role: true } },
+      receiver: { select: { fullName: true, avatarUrl: true, role: true } },
+      trip:     { select: { pickupAddress: true, dropoffAddress: true } },
+    },
+  });
+  res.json(ratings);
+});
+
 // ── GET /admin/stats ──────────────────────────────────────────────────────────
 
 router.get("/stats", async (_req, res: Response) => {
