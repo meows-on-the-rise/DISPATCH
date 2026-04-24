@@ -169,5 +169,36 @@ router.get("/documents", authenticate, async (req: AuthRequest, res: Response) =
   });
   res.json(docs);
 });
-
+// ── GET /drivers/nearby ───────────────────────────────────────────────────────
+router.get("/nearby", authenticate, async (req: AuthRequest, res: Response) => {
+  if (req.user!.role !== "PASSENGER") {
+    res.status(403).json({ error: "Passengers only" });
+    return;
+  }
+  const drivers = await prisma.driverProfile.findMany({
+    where: { isClockedIn: true, isVerified: true },
+    include: {
+      user: {
+        select: {
+          id: true, fullName: true, userId: true,
+          avatarUrl: true, rating: true, reviewCount: true,
+        },
+      },
+    },
+  });
+  res.json(drivers.map(d => ({
+    id: d.user.id,
+    userId: d.user.userId,
+    fullName: d.user.fullName,
+    avatarUrl: d.user.avatarUrl,
+    rating: d.user.rating,
+    reviewCount: d.user.reviewCount,
+    vehicleMake: d.vehicleMake,
+    vehicleModel: d.vehicleModel,
+    vehiclePlate: d.vehiclePlate,
+    vehicleColor: d.vehicleColor,
+    currentLat: d.currentLat,
+    currentLng: d.currentLng,
+  })));
+});
 export default router;
