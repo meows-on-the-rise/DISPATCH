@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { adminApi, userApi } from "../../api/client";
+import { adminApi } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
 import { useToast } from "../../lib/toast";
 import { Icons, Avatar, StarRating } from "../../components/shared";
@@ -20,11 +20,305 @@ interface Review {
   trip?: { pickupAddress: string; dropoffAddress: string };
 }
 
+// ── Schema viewer ─────────────────────────────────────────────────────────────
+
+const SCHEMA_TABLES = [
+  {
+    name: "user",
+    color: "#0d7a8a",
+    description: "Core user accounts for all roles",
+    fields: [
+      { name: "id", type: "uuid", pk: true },
+      { name: "userId", type: "string", note: "e.g. p2026XXXXX" },
+      { name: "fullName", type: "string" },
+      { name: "username", type: "string", unique: true },
+      { name: "email", type: "string", unique: true },
+      { name: "phone", type: "string", unique: true },
+      { name: "password", type: "string", note: "bcrypt hashed" },
+      { name: "dob", type: "datetime" },
+      { name: "idNumber", type: "string", unique: true },
+      { name: "role", type: "PASSENGER | DRIVER | ADMIN" },
+      { name: "avatarUrl", type: "string?" },
+      { name: "rating", type: "float", note: "default 5.0" },
+      { name: "reviewCount", type: "int" },
+      { name: "createdAt", type: "datetime" },
+      { name: "updatedAt", type: "datetime" },
+    ],
+    relations: ["wallet (1:1)", "driver_profile (1:1)", "trip ×2 (1:N)", "rating ×2 (1:N)", "otp_token (1:N)", "refresh_token (1:N)"],
+  },
+  {
+    name: "driver_profile",
+    color: "#f97316",
+    description: "Driver-specific data and vehicle info",
+    fields: [
+      { name: "id", type: "uuid", pk: true },
+      { name: "userId", type: "uuid", fk: "user.id" },
+      { name: "vehicleMake", type: "string?" },
+      { name: "vehicleModel", type: "string?" },
+      { name: "vehiclePlate", type: "string?" },
+      { name: "vehicleColor", type: "string?" },
+      { name: "isClockedIn", type: "boolean", note: "default false" },
+      { name: "isVerified", type: "boolean", note: "set by admin" },
+      { name: "currentLat", type: "float?" },
+      { name: "currentLng", type: "float?" },
+      { name: "updatedAt", type: "datetime" },
+    ],
+    relations: ["driver_document (1:N)"],
+  },
+  {
+    name: "driver_document",
+    color: "#1a9aaa",
+    description: "LICENSE, PERMIT, REGISTRATION uploads",
+    fields: [
+      { name: "id", type: "uuid", pk: true },
+      { name: "driverProfileId", type: "uuid", fk: "driver_profile.id" },
+      { name: "docType", type: "LICENSE | PERMIT | REGISTRATION" },
+      { name: "fileUrl", type: "string", note: "Cloudinary URL" },
+      { name: "status", type: "PENDING | VERIFIED | REJECTED" },
+      { name: "uploadedAt", type: "datetime" },
+      { name: "reviewedAt", type: "datetime?" },
+      { name: "reviewNote", type: "string?" },
+    ],
+    relations: [],
+  },
+  {
+    name: "trip",
+    color: "#16a34a",
+    description: "Ride requests and their lifecycle",
+    fields: [
+      { name: "id", type: "uuid", pk: true },
+      { name: "passengerId", type: "uuid", fk: "user.id" },
+      { name: "driverId", type: "uuid?", fk: "user.id" },
+      { name: "preferredDriverId", type: "uuid?", fk: "user.id", note: "passenger's chosen driver" },
+      { name: "status", type: "REQUESTED | DRIVER_ASSIGNED | DRIVER_ARRIVED | IN_PROGRESS | COMPLETED | CANCELLED" },
+      { name: "pickupAddress", type: "string" },
+      { name: "pickupLat / pickupLng", type: "float" },
+      { name: "dropoffAddress", type: "string" },
+      { name: "dropoffLat / dropoffLng", type: "float" },
+      { name: "seats", type: "int", note: "default 1" },
+      { name: "distanceKm", type: "float?" },
+      { name: "durationMin", type: "float?" },
+      { name: "totalPrice", type: "decimal?" },
+      { name: "driverEarning", type: "decimal?", note: "80%" },
+      { name: "systemCommission", type: "decimal?", note: "20%" },
+      { name: "cancelledBy", type: "string?" },
+      { name: "cancelReason", type: "string?" },
+      { name: "cancelledAt / startedAt / completedAt", type: "datetime?" },
+      { name: "createdAt / updatedAt", type: "datetime" },
+    ],
+    relations: ["trip_location (1:N)", "rating (1:N)"],
+  },
+  {
+    name: "wallet",
+    color: "#7c3aed",
+    description: "Dispatch Cash balance per user",
+    fields: [
+      { name: "id", type: "uuid", pk: true },
+      { name: "userId", type: "uuid", fk: "user.id" },
+      { name: "balance", type: "decimal", note: "default 0.00" },
+      { name: "updatedAt", type: "datetime" },
+    ],
+    relations: ["wallet_transaction (1:N)"],
+  },
+  {
+    name: "wallet_transaction",
+    color: "#9d4edd",
+    description: "All money movements",
+    fields: [
+      { name: "id", type: "uuid", pk: true },
+      { name: "walletId", type: "uuid", fk: "wallet.id" },
+      { name: "type", type: "DEPOSIT | WITHDRAWAL | TRIP_PAYMENT | TRIP_EARNING | REFUND" },
+      { name: "amount", type: "decimal" },
+      { name: "description", type: "string?" },
+      { name: "tripId", type: "string?" },
+      { name: "createdAt", type: "datetime" },
+    ],
+    relations: [],
+  },
+  {
+    name: "rating",
+    color: "#d97706",
+    description: "Post-trip ratings between users",
+    fields: [
+      { name: "id", type: "uuid", pk: true },
+      { name: "tripId", type: "uuid", fk: "trip.id" },
+      { name: "giverId", type: "uuid", fk: "user.id" },
+      { name: "receiverId", type: "uuid", fk: "user.id" },
+      { name: "score", type: "int", note: "1–5" },
+      { name: "review", type: "string?" },
+      { name: "createdAt", type: "datetime" },
+    ],
+    relations: [],
+  },
+  {
+    name: "trip_location",
+    color: "#0891b2",
+    description: "GPS breadcrumbs recorded during IN_PROGRESS trips",
+    fields: [
+      { name: "id", type: "uuid", pk: true },
+      { name: "tripId", type: "uuid", fk: "trip.id" },
+      { name: "lat / lng", type: "float" },
+      { name: "recordedAt", type: "datetime" },
+    ],
+    relations: [],
+  },
+  {
+    name: "otp_token",
+    color: "#dc2626",
+    description: "One-time passwords for password reset",
+    fields: [
+      { name: "id", type: "uuid", pk: true },
+      { name: "userId", type: "uuid", fk: "user.id" },
+      { name: "token", type: "string" },
+      { name: "expiresAt", type: "datetime" },
+      { name: "used", type: "boolean" },
+      { name: "createdAt", type: "datetime" },
+    ],
+    relations: [],
+  },
+  {
+    name: "refresh_token",
+    color: "#be185d",
+    description: "JWT refresh token store",
+    fields: [
+      { name: "id", type: "uuid", pk: true },
+      { name: "userId", type: "uuid", fk: "user.id" },
+      { name: "token", type: "string", unique: true },
+      { name: "expiresAt", type: "datetime" },
+      { name: "createdAt", type: "datetime" },
+    ],
+    relations: [],
+  },
+];
+
+function SchemaView() {
+  const [expanded, setExpanded] = useState<string | null>("user");
+
+  return (
+    <div className="flex-col gap-3">
+      {/* System flow summary */}
+      <div className="card" style={{ padding: "16px 18px", marginBottom: 4 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "var(--teal)" }}>
+          System Flow
+        </div>
+        {[
+          { step: "1", label: "Register", desc: "User signs up → user row created, wallet created automatically" },
+          { step: "2", label: "Driver Setup", desc: "Driver uploads 3 docs → admin verifies → driver_profile.isVerified = true" },
+          { step: "3", label: "Ride Request", desc: "Passenger picks driver (optional) → trip created with REQUESTED status" },
+          { step: "4", label: "Driver Accepts", desc: "Driver accepts → trip.status = DRIVER_ASSIGNED, passenger notified via socket" },
+          { step: "5", label: "Trip Progress", desc: "DRIVER_ARRIVED → IN_PROGRESS → COMPLETED, GPS logged in trip_location" },
+          { step: "6", label: "Payment", desc: "On complete: passenger wallet debited, driver wallet credited (80/20 split)" },
+          { step: "7", label: "Rating", desc: "Both parties rate each other → rating row created, user.rating recalculated" },
+        ].map(({ step, label, desc }) => (
+          <div key={step} className="flex gap-3 items-start" style={{ marginBottom: 10 }}>
+            <div style={{
+              width: 24, height: 24, borderRadius: "50%", background: "var(--teal)",
+              color: "#fff", fontSize: 11, fontWeight: 700, flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>{step}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{label}</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-secondary)", marginBottom: 4 }}>
+        Database Tables ({SCHEMA_TABLES.length})
+      </div>
+
+      {SCHEMA_TABLES.map(table => (
+        <div key={table.name} className="card" style={{ padding: 0, overflow: "hidden" }}>
+          {/* Table header */}
+          <button
+            onClick={() => setExpanded(expanded === table.name ? null : table.name)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 12,
+              padding: "14px 16px", background: "none", border: "none", cursor: "pointer",
+              textAlign: "left", fontFamily: "var(--font)",
+            }}
+          >
+            <div style={{
+              width: 10, height: 10, borderRadius: "50%",
+              background: table.color, flexShrink: 0,
+            }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, fontFamily: "monospace", color: table.color }}>
+                {table.name}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{table.description}</div>
+            </div>
+            <span style={{
+              color: "var(--text-muted)", fontSize: 11,
+              transform: expanded === table.name ? "rotate(180deg)" : "none",
+              transition: "transform 200ms", display: "inline-flex",
+            }}>
+              {Icons.chevronDown}
+            </span>
+          </button>
+
+          {/* Expanded fields */}
+          {expanded === table.name && (
+            <div className="fade-in" style={{ borderTop: "1px solid var(--border-light)", padding: "0 0 12px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "var(--bg-surface)" }}>
+                    {["Field", "Type", "Note"].map(h => (
+                      <th key={h} style={{
+                        padding: "8px 16px", textAlign: "left", fontSize: 10,
+                        fontWeight: 700, color: "var(--text-muted)",
+                        textTransform: "uppercase", letterSpacing: "0.06em",
+                      }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {table.fields.map((f, i) => (
+                    <tr key={f.name} style={{ background: i % 2 === 0 ? "var(--bg-white)" : "var(--bg-surface)" }}>
+                      <td style={{ padding: "7px 16px", fontFamily: "monospace", fontSize: 12, fontWeight: 600, color: f.pk ? table.color : "var(--text-primary)" }}>
+                        {f.pk && <span style={{ fontSize: 9, background: table.color, color: "#fff", borderRadius: 3, padding: "1px 4px", marginRight: 5 }}>PK</span>}
+                        {(f as any).fk && <span style={{ fontSize: 9, background: "var(--teal-dim)", color: "var(--teal)", borderRadius: 3, padding: "1px 4px", marginRight: 5 }}>FK</span>}
+                        {(f as any).unique && <span style={{ fontSize: 9, background: "rgba(249,115,22,0.1)", color: "var(--orange)", borderRadius: 3, padding: "1px 4px", marginRight: 5 }}>UQ</span>}
+                        {f.name}
+                      </td>
+                      <td style={{ padding: "7px 16px", fontSize: 11, color: "var(--text-secondary)", fontFamily: "monospace" }}>
+                        {f.type}
+                      </td>
+                      <td style={{ padding: "7px 16px", fontSize: 11, color: "var(--text-muted)" }}>
+                        {(f as any).fk ? `→ ${(f as any).fk}` : (f as any).note ?? ""}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {table.relations.length > 0 && (
+                <div style={{ padding: "10px 16px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Relations:</span>
+                  {table.relations.map(r => (
+                    <span key={r} style={{
+                      fontSize: 11, background: "var(--teal-dim)", color: "var(--teal)",
+                      borderRadius: "var(--r-pill)", padding: "2px 8px", fontFamily: "monospace",
+                    }}>{r}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function AdminPanel() {
   const navigate = useNavigate();
   const toast = useToast();
   const { user, logout } = useAuthStore();
-  const [tab, setTab] = useState<"docs" | "stats" | "reviews">("docs");
+  const [tab, setTab] = useState<"docs" | "stats" | "reviews" | "schema">("docs");
   const [docs, setDocs] = useState<Doc[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -41,11 +335,8 @@ export default function AdminPanel() {
   useEffect(() => {
     if (tab !== "reviews" || reviews.length > 0) return;
     setReviewsLoading(true);
-    // Fetch reviews for all users — we use getUsers then aggregate
-    // Fall back to fetching trips which include ratings
     adminApi.getTrips("", "COMPLETED")
       .then(({ data }) => {
-        // Extract ratings embedded in trips
         const extracted: Review[] = [];
         for (const trip of data) {
           if (trip.rating != null) {
@@ -88,7 +379,7 @@ export default function AdminPanel() {
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>Administrator</div>
             <div style={{ fontWeight: 700, fontSize: 17, color: "#fff" }}>{user?.fullName}</div>
           </div>
-          <button onClick={() => { logout(); navigate("/", { replace: true, state: {} }); }} style={{
+          <button onClick={() => { logout(); navigate("/", { replace: true }); }} style={{
             background: "rgba(239,68,68,0.2)", border: "none", borderRadius: "var(--r-md)",
             padding: "8px 14px", cursor: "pointer", color: "#fff", fontSize: 13,
             fontWeight: 600, display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font)",
@@ -112,20 +403,24 @@ export default function AdminPanel() {
           ))}
         </div>
 
-        <div className="tab-switch">
-          {(["docs", "stats", "reviews"] as const).map(t => (
+        <div className="tab-switch" style={{ overflowX: "auto", scrollbarWidth: "none" }}>
+          {(["docs", "stats", "reviews", "schema"] as const).map(t => (
             <button key={t} className={`tab-switch-item ${tab === t ? "active" : ""}`}
               onClick={() => setTab(t)}>
               {t === "docs"
                 ? `Docs${docs.length > 0 ? ` (${docs.length})` : ""}`
-                : t === "stats" ? "Stats" : "Reviews"}
+                : t === "stats" ? "Stats"
+                : t === "reviews" ? "Reviews"
+                : "Schema"}
             </button>
           ))}
         </div>
       </div>
 
       <div className="scroll-area flex-1 px-5" style={{ paddingTop: 20, paddingBottom: 32 }}>
-        {loading && <div className="flex justify-center" style={{ padding: 32 }}><span className="spinner" /></div>}
+        {loading && tab !== "schema" && (
+          <div className="flex justify-center" style={{ padding: 32 }}><span className="spinner" /></div>
+        )}
 
         {/* ── Pending documents ── */}
         {!loading && tab === "docs" && (
@@ -178,10 +473,10 @@ export default function AdminPanel() {
           <div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               {[
-                { icon: Icons.user,     label: "Passengers",  value: stats.passengers,     color: "var(--teal)" },
-                { icon: Icons.car,      label: "Drivers",     value: stats.drivers,         color: "var(--orange)" },
-                { icon: Icons.activity, label: "Total Trips", value: stats.totalTrips,      color: "var(--teal-mid)" },
-                { icon: Icons.check,    label: "Completed",   value: stats.completedTrips,  color: "var(--success)" },
+                { icon: Icons.user,     label: "Passengers",  value: stats.passengers,    color: "var(--teal)" },
+                { icon: Icons.car,      label: "Drivers",     value: stats.drivers,        color: "var(--orange)" },
+                { icon: Icons.activity, label: "Total Trips", value: stats.totalTrips,     color: "var(--teal-mid)" },
+                { icon: Icons.check,    label: "Completed",   value: stats.completedTrips, color: "var(--success)" },
               ].map(({ icon, label, value, color }) => (
                 <div key={label} className="card" style={{ padding: "18px 16px", textAlign: "center" }}>
                   <div style={{
@@ -226,11 +521,9 @@ export default function AdminPanel() {
               <div key={r.id} className="card" style={{ padding: "16px 18px" }}>
                 <div className="flex items-center gap-3" style={{ marginBottom: 10 }}>
                   <Avatar src={r.reviewer?.avatarUrl} name={r.reviewer?.fullName ?? "?"} size={40} />
-                  <div className="flex-1">
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{r.reviewer?.fullName ?? "Passenger"}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                      → {r.reviewee?.fullName ?? "Driver"}
-                    </div>
+                  <div className="flex-1" style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }} className="truncate">{r.reviewer?.fullName ?? "Passenger"}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>→ {r.reviewee?.fullName ?? "Driver"}</div>
                   </div>
                   <StarRating value={r.score} />
                 </div>
@@ -257,6 +550,9 @@ export default function AdminPanel() {
             ))}
           </div>
         )}
+
+        {/* ── Schema ── */}
+        {tab === "schema" && <SchemaView />}
       </div>
     </div>
   );
