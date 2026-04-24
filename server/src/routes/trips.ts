@@ -34,6 +34,7 @@ const createTripSchema = z.object({
   dropoffLng: z.number(),
   seats: z.number().int().min(1).max(6).default(1),
   durationMin: z.number().optional(),
+  preferredDriverId: z.string().optional(),
 });
 
 router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
@@ -77,6 +78,7 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
       driverEarning: price.driverEarning,
       systemCommission: price.systemCommission,
       status: "REQUESTED",
+      ...(parsed.data.preferredDriverId ? { driverId: null } : {}),
     },
     include: {
       passenger: { select: { fullName: true, avatarUrl: true, rating: true, userId: true } },
@@ -84,7 +86,11 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
   });
 
   // Broadcast to nearby clocked-in drivers via Socket.IO
+  if (parsed.data.preferredDriverId) {
+  getIO().to(`user:${parsed.data.preferredDriverId}`).emit("new:trip", trip);
+} else {
   getIO().emit("new:trip", trip);
+}
 
   res.status(201).json(trip);
 });
@@ -99,7 +105,14 @@ router.get("/available", authenticate, async (req: AuthRequest, res: Response) =
   }
 
   const trips = await prisma.trip.findMany({
-    where: { status: "REQUESTED", driverId: null },
+    where: {
+      status: "REQUESTED",
+      driverId: null,
+      OR: [
+        { preferredDriverId: req.user!.id },
+        { preferredDriverId: null },
+      ],
+    },
     include: {
       passenger: { select: { fullName: true, avatarUrl: true, rating: true, userId: true } },
     },
