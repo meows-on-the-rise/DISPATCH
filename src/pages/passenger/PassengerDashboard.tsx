@@ -5,6 +5,8 @@ import { useSocket } from "../../hooks/useSocket";
 import { Avatar, BalanceBadge, IconBtn, Icons, StarRating, TicketCard } from "../../components/shared";
 import { useTripStore } from "../../store/tripStore";
 import { tripApi } from "../../api/client";
+import PullToRefresh from "../../components/shared/PullToRefresh";
+import { useRefresh } from "../../hooks/useRefresh";
 
 export default function PassengerDashboard() {
   const navigate = useNavigate();
@@ -12,10 +14,14 @@ export default function PassengerDashboard() {
   const { availableTrips, setAvailableTrips } = useTripStore();
   useSocket();
 
-  useEffect(() => {
-    refreshUser();
-    tripApi.getHistory().then(({ data }) => setAvailableTrips(data)).catch(() => {});
-  }, []);
+ async function loadData() {
+    await refreshUser();
+    await tripApi.getHistory().then(({ data }) => setAvailableTrips(data)).catch(() => {});
+  }
+
+  useEffect(() => { loadData(); }, []);
+
+  const { onRefresh } = useRefresh(loadData);
 
   const balance = Number(user?.wallet?.balance ?? 0);
   const recentTrips = availableTrips.slice(0, 3);
@@ -26,7 +32,8 @@ export default function PassengerDashboard() {
     { icon: Icons.stats,    label: "Stats",       path: "/passenger/stats",    disabled: false },
   ];
 
-  return (
+ return (
+    <PullToRefresh onRefresh={onRefresh}>
     <div className="app-shell">
       {/* Dark teal header — "Find your ride" */}
       <div className="header-dark" style={{ paddingBottom: 32 }}>
@@ -41,6 +48,8 @@ export default function PassengerDashboard() {
           </button>
           <BalanceBadge amount={balance} />
         </div>
+      </div>
+    </PullToRefresh>
 
         <h2 style={{ color: "#fff", marginBottom: 4 }}>Where to?</h2>
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, marginBottom: 20 }}>Be on your way in a jiffy!</p>
