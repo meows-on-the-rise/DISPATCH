@@ -1,15 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { tripApi } from "../../api/client";
+import { tripApi, driverApi } from "../../api/client";
 import { useAuthStore } from "../../store/authStore";
 import { useTripStore, Trip } from "../../store/tripStore";
 import { useSocket } from "../../hooks/useSocket";
 import { useGeolocation } from "../../hooks/useGeolocation";
 import { useToast } from "../../lib/toast";
-import { Icons, LocationCard, DriverCard, MapInfoCard } from "../../components/shared";
+import { Icons, LocationCard, DriverCard, MapInfoCard, Avatar, StarRating } from "../../components/shared";
 import DispatchMap from "../../components/map/DispatchMap";
 
-type Phase = "input" | "estimate" | "selecting" | "tracking" | "rating";
+type Phase = "input" | "drivers" | "estimate" | "selecting" | "tracking" | "rating";
+
+interface NearbyDriver {
+  id: string; userId: string; fullName: string; avatarUrl?: string;
+  rating: number; reviewCount: number;
+  vehicleMake?: string; vehicleModel?: string; vehiclePlate?: string; vehicleColor?: string;
+  currentLat?: number; currentLng?: number;
+}
 
 export default function RequestRidePage() {
   const navigate = useNavigate();
@@ -30,19 +37,23 @@ export default function RequestRidePage() {
   const [ratingReview, setRatingReview] = useState("");
   const [settingPoint, setSettingPoint] = useState<"pickup" | "dropoff">("pickup");
   const [completedTrip, setCompletedTrip] = useState<Trip | null>(null);
+  const [nearbyDrivers, setNearbyDrivers] = useState<NearbyDriver[]>([]);
+  const [selectedDriver, setSelectedDriver] = useState<NearbyDriver | null>(null);
+  const [driversLoading, setDriversLoading] = useState(false);
+  const prevStatus = useRef<string | null>(null);
 
- const prevStatus = useRef<string | null>(null);
+  // Driver arrived notification
+  useEffect(() => {
+    if (
+      activeTrip?.status === "DRIVER_ARRIVED" &&
+      prevStatus.current === "DRIVER_ASSIGNED"
+    ) {
+      toast("Your driver has arrived! 🚗", "success");
+    }
+    prevStatus.current = activeTrip?.status ?? null;
+  }, [activeTrip?.status]);
 
-useEffect(() => {
-  if (
-    activeTrip?.status === "DRIVER_ARRIVED" &&
-    prevStatus.current === "DRIVER_ASSIGNED"
-  ) {
-    toast("Your driver has arrived!", "success");
-  }
-  prevStatus.current = activeTrip?.status ?? null;
-}, [activeTrip?.status]);
-
+  // Restore tracking if app reopened mid-trip
   useEffect(() => {
     if (activeTrip && !["COMPLETED", "CANCELLED"].includes(activeTrip.status)) {
       setPhase("tracking");
@@ -50,20 +61,22 @@ useEffect(() => {
     }
   }, []);
 
+  // Handle trip status changes
   useEffect(() => {
-  if (!activeTrip) return;
-  if (activeTrip.status === "COMPLETED" && !completedTrip) {
-    setCompletedTrip({ ...activeTrip });
-    setPhase("rating");
-  }
-  if (activeTrip.status === "CANCELLED") {
-    toast("Trip was cancelled", "error");
-    setActiveTrip(null);
-    setPhase("input");
-    navigate("/passenger");
-  }
-}, [activeTrip?.status]);
-  
+    if (!activeTrip) return;
+    if (activeTrip.status === "COMPLETED" && !completedTrip) {
+      setCompletedTrip({ ...activeTrip });
+      setPhase("rating");
+    }
+    if (activeTrip.status === "CANCELLED") {
+      toast("Trip was cancelled", "error");
+      setActiveTrip(null);
+      setPhase("input");
+      navigate("/passenger");
+    }
+  }, [activeTrip?.status]);
+
+  // Set pickup to current location when coords arrive
   useEffect(() => {
     if (coords && !pickupCoords) {
       setPickupCoords(coords);
@@ -86,8 +99,25 @@ useEffect(() => {
     } catch { toast("Search failed", "error"); }
   }
 
-  async function getEstimate() {
+  async function fetchNearbyDrivers() {
+    if (!pickupCoords || !dropoffCoords) {
+      toast("Set both locations first", "error"); return;
+    }
+    setDriversLoading(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/drivers/nearby`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+      });
+      const data = await res.json();
+      setNearbyDrivers(data);
+      setPhase("drivers");
+    } catch { toast("Could not load drivers", "error"); }
+    finally { setDriversLoading(false); }
+  }
+
+  async function getEstimate(driver?: NearbyDriver) {
     if (!pickupCoords || !dropoffCoords) { toast("Set both locations on the map", "error"); return; }
+    if (driver) setSelectedDriver(driver);
     setLoading(true);
     try {
       const { data } = await tripApi.estimate({
@@ -113,7 +143,8 @@ useEffect(() => {
         dropoffAddress: dropoffAddr || "Drop-off",
         dropoffLat: dropoffCoords.lat, dropoffLng: dropoffCoords.lng,
         seats,
-      });
+        ...(selectedDriver ? { preferredDriverId: selectedDriver.id } : {}),
+      } as any);
       setActiveTrip(trip); joinTrip(trip.id); setPhase("selecting");
       const interval = setInterval(async () => {
         const { data } = await tripApi.getOne(trip.id);
@@ -127,14 +158,14 @@ useEffect(() => {
   }
 
   async function cancelTrip() {
-  if (!activeTrip) return;
-  try {
-    await tripApi.cancel(activeTrip.id);
-    setActiveTrip(null);
-    toast("Trip cancelled", "info");
-    navigate("/passenger");
-  } catch { toast("Could not cancel", "error"); }
-}
+    if (!activeTrip) return;
+    try {
+      await tripApi.cancel(activeTrip.id);
+      setActiveTrip(null);
+      toast("Trip cancelled", "info");
+      navigate("/passenger");
+    } catch { toast("Could not cancel", "error"); }
+  }
 
   async function submitRating() {
     const trip = completedTrip ?? activeTrip;
@@ -148,8 +179,10 @@ useEffect(() => {
 
   const mapCenter = pickupCoords ?? (coords ?? { lat: -29.3167, lng: 27.4833 });
 
-  // ── Rating phase — shown fullscreen, no map ──────────────────────────────
-  if (phase === "rating" && completedTrip) {
+  // ── Rating phase ──────────────────────────────────────────────────────────
+  if (phase === "rating") {
+    const trip = completedTrip;
+    if (!trip) { navigate("/passenger"); return null; }
     return (
       <div className="app-shell" style={{ justifyContent: "center", padding: "40px 24px" }}>
         <div className="page-enter flex-col gap-4 text-center items-center" style={{ width: "100%" }}>
@@ -166,12 +199,12 @@ useEffect(() => {
             <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
               You paid{" "}
               <strong style={{ color: "var(--orange)" }}>
-                M {Number(completedTrip.totalPrice ?? 0).toFixed(2)}
+                M {Number(trip.totalPrice ?? 0).toFixed(2)}
               </strong>
             </p>
           </div>
           <div className="divider w-full" />
-          {completedTrip.driver && (
+          {trip.driver && (
             <div style={{ width: "100%" }}>
               <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 12 }}>
                 Rate your driver
@@ -210,7 +243,7 @@ useEffect(() => {
 
   return (
     <div className="app-shell">
-      {/* Map fills top portion */}
+      {/* Map */}
       <div style={{ height: 320, position: "relative", flexShrink: 0 }}>
         <DispatchMap
           center={mapCenter}
@@ -230,7 +263,6 @@ useEffect(() => {
           }}
         />
 
-        {/* Map overlay controls */}
         <div style={{
           position: "absolute", top: 16, left: 16, right: 16, zIndex: 999,
           display: "flex", justifyContent: "space-between", alignItems: "flex-start",
@@ -263,7 +295,7 @@ useEffect(() => {
       </div>
 
       {/* Bottom sheet */}
-      <div style={{ background: "var(--bg-base)", borderRadius: "24px 24px 0 0", flexShrink: 0, marginTop: -20 }}>
+      <div style={{ background: "var(--bg-base)", borderRadius: "24px 24px 0 0", flexShrink: 0, marginTop: -20, overflowY: "auto", maxHeight: "60vh" }}>
         <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 2, margin: "12px auto 0" }} />
 
         <div className="px-5" style={{ paddingBottom: 28, paddingTop: 16 }}>
@@ -300,7 +332,7 @@ useEffect(() => {
                     style={{ minWidth: 0, flex: 1 }}
                   />
                   <button type="button" onClick={() => searchAddress(dropoffAddr, "dropoff")}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 8px" }}>
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 4px" }}>
                     {Icons.search}
                   </button>
                 </div>
@@ -322,9 +354,72 @@ useEffect(() => {
                 </div>
               </div>
 
-              <button className="btn btn-primary" onClick={getEstimate}
-                disabled={loading || !pickupCoords || !dropoffCoords}>
-                {loading ? <span className="spinner spinner-dark" style={{ width: 20, height: 20 }} /> : "Get Price"}
+              <button className="btn btn-primary" onClick={fetchNearbyDrivers}
+                disabled={driversLoading || !pickupCoords || !dropoffCoords}>
+                {driversLoading
+                  ? <span className="spinner spinner-dark" style={{ width: 20, height: 20 }} />
+                  : <>{Icons.search} Find Available Drivers</>}
+              </button>
+            </div>
+          )}
+
+          {/* ── Browse drivers phase ── */}
+          {phase === "drivers" && (
+            <div className="flex-col gap-3 page-enter">
+              <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
+                <span style={{ fontWeight: 700, fontSize: 15 }}>Available Drivers</span>
+                <button onClick={() => setPhase("input")}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", fontSize: 13 }}>
+                  Change locations
+                </button>
+              </div>
+
+              {nearbyDrivers.length === 0 && (
+                <div className="card text-center" style={{ padding: 32 }}>
+                  <div style={{ color: "var(--text-muted)", marginBottom: 8, display: "flex", justifyContent: "center" }}>{Icons.car}</div>
+                  <div style={{ fontWeight: 600 }}>No drivers available</div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Try again in a moment</div>
+                </div>
+              )}
+
+              {nearbyDrivers.map(driver => (
+                <div key={driver.id} className="card" style={{ padding: 16 }}>
+                  <div className="flex items-center gap-3" style={{ marginBottom: 12 }}>
+                    <Avatar src={driver.avatarUrl} name={driver.fullName} size={48} />
+                    <div className="flex-1" style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15 }} className="truncate">{driver.fullName}</div>
+                      <StarRating value={driver.rating} count={driver.reviewCount} />
+                    </div>
+                  </div>
+                  {(driver.vehicleMake || driver.vehicleModel) && (
+                    <div style={{
+                      background: "var(--bg-input)", borderRadius: "var(--r-md)",
+                      padding: "8px 12px", marginBottom: 12, fontSize: 13,
+                      color: "var(--text-secondary)",
+                    }}>
+                      {driver.vehicleMake} {driver.vehicleModel}
+                      {driver.vehiclePlate && (
+                        <span style={{ color: "var(--teal)", fontWeight: 600, marginLeft: 8 }}>
+                          · {driver.vehiclePlate}
+                        </span>
+                      )}
+                      {driver.vehicleColor && (
+                        <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>({driver.vehicleColor})</span>
+                      )}
+                    </div>
+                  )}
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => getEstimate(driver)}
+                    disabled={loading}
+                  >
+                    {loading ? <span className="spinner spinner-dark" style={{ width: 18, height: 18 }} /> : "Request This Driver"}
+                  </button>
+                </div>
+              ))}
+
+              <button className="btn btn-outline" onClick={() => getEstimate()}>
+                Any available driver
               </button>
             </div>
           )}
@@ -332,6 +427,23 @@ useEffect(() => {
           {/* ── Estimate phase ── */}
           {phase === "estimate" && estimate && (
             <div className="flex-col gap-4 page-enter">
+              {selectedDriver && (
+                <div className="card" style={{ padding: "12px 16px" }}>
+                  <div className="flex items-center gap-3">
+                    <Avatar src={selectedDriver.avatarUrl} name={selectedDriver.fullName} size={40} />
+                    <div className="flex-1" style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14 }} className="truncate">{selectedDriver.fullName}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                        {selectedDriver.vehicleMake} {selectedDriver.vehicleModel} · {selectedDriver.vehiclePlate}
+                      </div>
+                    </div>
+                    <button onClick={() => { setSelectedDriver(null); setPhase("drivers"); }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 12 }}>
+                      Change
+                    </button>
+                  </div>
+                </div>
+              )}
               <LocationCard pickup={pickupAddr} dropoff={dropoffAddr}
                 distanceKm={estimate.distanceKm} durationMin={estimate.durationMin} />
               <div className="card" style={{ padding: "16px 20px" }}>
@@ -357,7 +469,7 @@ useEffect(() => {
               <button className="btn btn-primary" onClick={bookRide} disabled={loading}>
                 {loading ? <span className="spinner spinner-dark" style={{ width: 20, height: 20 }} /> : "Book a Ride"}
               </button>
-              <button className="btn btn-outline" onClick={() => { setPhase("input"); setEstimate(null); }}>Back</button>
+              <button className="btn btn-outline" onClick={() => { setPhase("drivers"); setEstimate(null); }}>Back</button>
             </div>
           )}
 
@@ -367,8 +479,12 @@ useEffect(() => {
               <div className="flex items-center gap-3">
                 <span className="spinner" />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>Finding your driver</div>
-                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Nearby drivers are being notified</div>
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>
+                    {selectedDriver ? `Waiting for ${selectedDriver.fullName}` : "Finding your driver"}
+                  </div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                    {selectedDriver ? "Driver is reviewing your request" : "Nearby drivers are being notified"}
+                  </div>
                 </div>
               </div>
               {activeTrip && (
@@ -405,7 +521,6 @@ useEffect(() => {
               </button>
             </div>
           )}
-
         </div>
       </div>
     </div>
