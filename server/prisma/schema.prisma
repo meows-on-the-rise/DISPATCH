@@ -39,7 +39,7 @@ enum TransactionType {
 
 model User {
   id          String   @id @default(uuid())
-  userId      String   @unique // e.g. p202621274 or d202621274
+  userId      String   @unique
   fullName    String
   username    String   @unique
   email       String   @unique
@@ -54,17 +54,17 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
   wallet          Wallet?
   passengerTrips  Trip[]          @relation("PassengerTrips")
   driverTrips     Trip[]          @relation("DriverTrips")
+  preferredTrips  Trip[]          @relation("PreferredDriverTrips")
   driverProfile   DriverProfile?
   ratingsGiven    Rating[]        @relation("RatingsGiven")
   ratingsReceived Rating[]        @relation("RatingsReceived")
   otpTokens       OtpToken[]
   refreshTokens   RefreshToken[]
 
-  @@map("users")
+  @@map("user")
 }
 
 model DriverProfile {
@@ -82,14 +82,14 @@ model DriverProfile {
   updatedAt    DateTime @updatedAt
   documents    DriverDocument[]
 
-  @@map("driver_profiles")
+  @@map("driver_profile")
 }
 
 model DriverDocument {
   id              String         @id @default(uuid())
   driverProfileId String
   driverProfile   DriverProfile  @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
-  docType         String         // LICENSE | PERMIT | REGISTRATION
+  docType         String
   fileUrl         String
   status          DocumentStatus @default(PENDING)
   uploadedAt      DateTime       @default(now())
@@ -97,7 +97,7 @@ model DriverDocument {
   reviewNote      String?
 
   @@unique([driverProfileId, docType])
-  @@map("driver_documents")
+  @@map("driver_document")
 }
 
 model Wallet {
@@ -108,7 +108,7 @@ model Wallet {
   updatedAt    DateTime             @updatedAt
   transactions WalletTransaction[]
 
-  @@map("wallets")
+  @@map("wallet")
 }
 
 model WalletTransaction {
@@ -121,51 +121,53 @@ model WalletTransaction {
   tripId      String?
   createdAt   DateTime        @default(now())
 
-  @@map("wallet_transactions")
+  @@map("wallet_transaction")
 }
 
 model Trip {
-  id              String     @id @default(uuid())
-  passengerId     String
-  passenger       User       @relation("PassengerTrips", fields: [passengerId], references: [id])
-  driverId        String?
-  driver          User?      @relation("DriverTrips", fields: [driverId], references: [id])
-  status          TripStatus @default(REQUESTED)
-  pickupAddress   String
-  pickupLat       Float
-  pickupLng       Float
-  dropoffAddress  String
-  dropoffLat      Float
-  dropoffLng      Float
-  seats           Int        @default(1)
-  distanceKm      Float?
-  durationMin     Float?
-  totalPrice      Decimal?   @db.Decimal(10, 2)
-  driverEarning   Decimal?   @db.Decimal(10, 2)  // 80%
-  systemCommission Decimal?  @db.Decimal(10, 2)  // 20%
-  cancelledBy     String?    // userId of who cancelled
-  cancelReason    String?
-  cancelledAt     DateTime?
-  startedAt       DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id                String     @id @default(uuid())
+  passengerId       String
+  passenger         User       @relation("PassengerTrips", fields: [passengerId], references: [id])
+  driverId          String?
+  driver            User?      @relation("DriverTrips", fields: [driverId], references: [id])
+  preferredDriverId String?
+  preferredDriver   User?      @relation("PreferredDriverTrips", fields: [preferredDriverId], references: [id])
+  status            TripStatus @default(REQUESTED)
+  pickupAddress     String
+  pickupLat         Float
+  pickupLng         Float
+  dropoffAddress    String
+  dropoffLat        Float
+  dropoffLng        Float
+  seats             Int        @default(1)
+  distanceKm        Float?
+  durationMin       Float?
+  totalPrice        Decimal?   @db.Decimal(10, 2)
+  driverEarning     Decimal?   @db.Decimal(10, 2)
+  systemCommission  Decimal?   @db.Decimal(10, 2)
+  cancelledBy       String?
+  cancelReason      String?
+  cancelledAt       DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   locations TripLocation[]
   ratings   Rating[]
 
-  @@map("trips")
+  @@map("trip")
 }
 
 model TripLocation {
-  id        String   @id @default(uuid())
-  tripId    String
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  lat       Float
-  lng       Float
+  id         String   @id @default(uuid())
+  tripId     String
+  trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  lat        Float
+  lng        Float
   recordedAt DateTime @default(now())
 
-  @@map("trip_locations")
+  @@map("trip_location")
 }
 
 model Rating {
@@ -176,12 +178,12 @@ model Rating {
   giver      User     @relation("RatingsGiven", fields: [giverId], references: [id])
   receiverId String
   receiver   User     @relation("RatingsReceived", fields: [receiverId], references: [id])
-  score      Int      // 1-5
+  score      Int
   review     String?
   createdAt  DateTime @default(now())
 
   @@unique([tripId, giverId])
-  @@map("ratings")
+  @@map("rating")
 }
 
 model OtpToken {
@@ -193,7 +195,7 @@ model OtpToken {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  @@map("otp_tokens")
+  @@map("otp_token")
 }
 
 model RefreshToken {
@@ -204,5 +206,5 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  @@map("refresh_tokens")
+  @@map("refresh_token")
 }
