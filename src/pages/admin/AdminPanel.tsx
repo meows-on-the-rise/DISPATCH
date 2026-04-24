@@ -411,7 +411,7 @@ export default function AdminPanel() {
                 ? `Docs${docs.length > 0 ? ` (${docs.length})` : ""}`
                 : t === "stats" ? "Stats"
                 : t === "reviews" ? "Reviews"
-                : "Schema"}
+                : "System Flow"}
             </button>
           ))}
         </div>
