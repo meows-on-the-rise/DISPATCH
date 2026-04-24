@@ -54,7 +54,6 @@ export default function RequestRidePage() {
   }, [activeTrip?.status]);
 
   // Restore tracking if app reopened mid-trip
-  // Restore tracking if app reopened mid-trip
   useEffect(() => {
     if (!activeTrip) return;
     if (activeTrip.status === "COMPLETED") {
@@ -66,7 +65,7 @@ export default function RequestRidePage() {
     }
   }, []);
 
- // Handle trip status changes
+  // Handle trip status changes
   useEffect(() => {
     if (!activeTrip) return;
     if (activeTrip.status === "COMPLETED") {
@@ -185,7 +184,7 @@ export default function RequestRidePage() {
   const mapCenter = pickupCoords ?? (coords ?? { lat: -29.3167, lng: 27.4833 });
 
   // ── Rating phase ──────────────────────────────────────────────────────────
-    if (phase === "rating") {
+  if (phase === "rating") {
     const trip = completedTrip ?? activeTrip;
     if (!trip) { navigate("/passenger"); return null; }
     return (
@@ -307,7 +306,8 @@ export default function RequestRidePage() {
 
           {/* ── Input phase ── */}
           {phase === "input" && (
-            <div className="input-group">
+            <div className="flex-col gap-4 page-enter">
+              <div className="input-group">
                 <div className="input-row">
                   <div className="input-dot-from" />
                   <input
