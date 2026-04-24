@@ -310,9 +310,26 @@ export default function RequestRidePage() {
                     value={pickupAddr}
                     onChange={e => setPickupAddr(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && searchAddress(pickupAddr, "pickup")}
+                    onFocus={() => {
+                      if (coords && !pickupCoords) {
+                        setPickupCoords(coords);
+                        setPickupAddr("My Location");
+                      }
+                    }}
                     placeholder="Pickup location"
                     style={{ minWidth: 0, flex: 1 }}
                   />
+                  {!pickupCoords && coords && (
+                    <button
+                      type="button"
+                      onClick={() => { setPickupCoords(coords); setPickupAddr("My Location"); }}
+                      style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        color: "var(--teal)", fontSize: 11, flexShrink: 0, padding: "0 4px"
+                      }}>
+                      📍 Use Mine
+                    </button>
+                  )}
                   <button type="button" onClick={() => searchAddress(pickupAddr, "pickup")}
                     style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", padding: "0 4px", flexShrink: 0 }}>
                     {Icons.search}
