@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router";
+import { HashRouter, Routes, Route, Navigate, useNavigate } from "react-router";
 import { ToastProvider } from "./lib/toast";
 import { useAuthStore } from "./store/authStore";
 
@@ -67,7 +67,7 @@ export default function App() {
   if (isLoading) return <LoadingScreen />;
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <ToastProvider>
         <Routes>
           {/* Root */}
@@ -112,6 +112,6 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ToastProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
