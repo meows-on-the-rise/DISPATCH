@@ -335,23 +335,18 @@ export default function AdminPanel() {
   useEffect(() => {
     if (tab !== "reviews" || reviews.length > 0) return;
     setReviewsLoading(true);
-    adminApi.getTrips("", "COMPLETED")
+    adminApi.getReviews()
       .then(({ data }) => {
-        const extracted: Review[] = [];
-        for (const trip of data) {
-          if (trip.rating != null) {
-            extracted.push({
-              id: trip.id,
-              score: trip.rating,
-              review: trip.ratingReview,
-              createdAt: trip.updatedAt ?? trip.createdAt,
-              reviewer: trip.passenger,
-              reviewee: trip.driver,
-              trip: { pickupAddress: trip.pickupAddress, dropoffAddress: trip.dropoffAddress },
-            });
-          }
-        }
-        setReviews(extracted);
+        const mapped: Review[] = data.map((r: any) => ({
+          id: r.id,
+          score: r.score,
+          review: r.review,
+          createdAt: r.createdAt,
+          reviewer: r.giver,
+          reviewee: r.receiver,
+          trip: r.trip,
+        }));
+        setReviews(mapped);
       })
       .catch(() => {})
       .finally(() => setReviewsLoading(false));
