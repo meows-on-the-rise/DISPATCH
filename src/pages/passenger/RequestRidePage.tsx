@@ -54,18 +54,23 @@ export default function RequestRidePage() {
   }, [activeTrip?.status]);
 
   // Restore tracking if app reopened mid-trip
+  // Restore tracking if app reopened mid-trip
   useEffect(() => {
-    if (activeTrip && !["COMPLETED", "CANCELLED"].includes(activeTrip.status)) {
+    if (!activeTrip) return;
+    if (activeTrip.status === "COMPLETED") {
+      setCompletedTrip(prev => prev ?? { ...activeTrip });
+      setPhase("rating");
+    } else if (!["CANCELLED"].includes(activeTrip.status)) {
       setPhase("tracking");
       joinTrip(activeTrip.id);
     }
   }, []);
 
-  // Handle trip status changes
+ // Handle trip status changes
   useEffect(() => {
     if (!activeTrip) return;
-    if (activeTrip.status === "COMPLETED" && !completedTrip) {
-      setCompletedTrip({ ...activeTrip });
+    if (activeTrip.status === "COMPLETED") {
+      setCompletedTrip(prev => prev ?? { ...activeTrip });
       setPhase("rating");
     }
     if (activeTrip.status === "CANCELLED") {
@@ -180,8 +185,8 @@ export default function RequestRidePage() {
   const mapCenter = pickupCoords ?? (coords ?? { lat: -29.3167, lng: 27.4833 });
 
   // ── Rating phase ──────────────────────────────────────────────────────────
-  if (phase === "rating") {
-    const trip = completedTrip;
+    if (phase === "rating") {
+    const trip = completedTrip ?? activeTrip;
     if (!trip) { navigate("/passenger"); return null; }
     return (
       <div className="app-shell" style={{ justifyContent: "center", padding: "40px 24px" }}>
