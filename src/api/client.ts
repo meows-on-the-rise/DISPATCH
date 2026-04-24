@@ -148,6 +148,8 @@ export const adminApi = {
   // Stats
   getStats: () => api.get("/admin/stats"),
 
+  getReviews: () => api.get("/admin/reviews"),
+
   // Reports
   getReportTripSummary:      (params?: { from?: string; to?: string; status?: string }) =>
     api.get("/admin/reports/trip-summary", { params }),
